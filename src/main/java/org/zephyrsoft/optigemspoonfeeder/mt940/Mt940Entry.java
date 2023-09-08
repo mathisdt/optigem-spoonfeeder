@@ -20,6 +20,7 @@ package org.zephyrsoft.optigemspoonfeeder.mt940;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -37,6 +38,10 @@ public class Mt940Entry {
 		/** money was transferred away from the current account */
 		DEBIT
 	}
+
+	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("YYMMdd");
+
+	private String originalText;
 
 	private String kontobezeichnung;
 
@@ -70,6 +75,16 @@ public class Mt940Entry {
 		}
 	}
 
+	public String getVerwendungszweckClean() {
+		return verwendungszweck
+				.replaceAll("(SVWZ\\+|EREF\\+\\S* ?+|KREF\\+\\S* ?+|MREF\\+\\S* ?+)", "");
+	}
+
+	public String getBuchungstextClean() {
+		return buchungstext
+				.replace("UE", "Ü");
+	}
+
 	public BigDecimal getBetragMitVorzeichen() {
 		if (isDebit()) {
 			return betrag.negate();
@@ -85,5 +100,14 @@ public class Mt940Entry {
 			name += " ";
 			name += string.trim();
 		}
+	}
+
+	public String getOriginalTextComplete() {
+		return ":20:STARTUMS\n"
+				+ ":25:" + getKontobezeichnung() + "\n"
+				+ ":28C:1\n"
+				+ ":60F:C" + DATE.format(getValutaDatum()) + "EUR0,00\n"
+				+ getOriginalText() + "\n"
+				+ ":62F:C" + DATE.format(getValutaDatum()) + "EUR0,00";
 	}
 }

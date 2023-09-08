@@ -14,7 +14,7 @@ public class SearchableString {
 			return false;
 		}
 		for (String term : terms) {
-			if (valueLowercase.contains(term)) {
+			if (valueLowercase.contains(term.toLowerCase())) {
 				return true;
 			}
 		}

@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
-import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.model.SearchableString;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry;
@@ -21,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class RuleService {
 	private final PersistenceService persistenceService;
 
-	public RulesResult apply(Mt940File input) {
+	public List<RuleResult> apply(Mt940File input) {
 		String rules = persistenceService.getRules();
 		List<Table> tables = persistenceService.getTables();
 
@@ -32,8 +31,7 @@ public class RuleService {
 			sharedData.setProperty(table.getName(), table);
 		}
 
-		List<RuleResult> converted = new ArrayList<>();
-		List<Mt940Entry> rejected = new ArrayList<>();
+		List<RuleResult> result = new ArrayList<>();
 		for (Mt940Entry entry : input.getEntries()) {
 			sharedData.setProperty("eigenkonto", new SearchableString(entry.getKontobezeichnung()));
 			sharedData.setProperty("datum", entry.getValutaDatum());
@@ -41,7 +39,7 @@ public class RuleService {
 			sharedData.setProperty("haben", entry.isCredit());
 			sharedData.setProperty("betrag", entry.getBetrag());
 			sharedData.setProperty("buchungstext", new SearchableString(entry.getBuchungstext()));
-			sharedData.setProperty("verwendungszweck", new SearchableString(entry.getVerwendungszweck()));
+			sharedData.setProperty("verwendungszweck", new SearchableString(entry.getVerwendungszweckClean()));
 			sharedData.setProperty("bank", new SearchableString(entry.getBankKennung()));
 			sharedData.setProperty("konto", new SearchableString(entry.getKontoNummer()));
 			sharedData.setProperty("name", new SearchableString(entry.getName()));
@@ -53,12 +51,9 @@ public class RuleService {
 				booking.setDatum(entry.getValutaDatum());
 				booking.setIncoming(entry.isCredit());
 				booking.setBetrag(entry.getBetrag());
-
-				converted.add(new RuleResult(entry, booking));
-			} else {
-				rejected.add(entry);
 			}
+			result.add(new RuleResult(entry, booking));
 		}
-		return new RulesResult(converted, rejected);
+		return result;
 	}
 }

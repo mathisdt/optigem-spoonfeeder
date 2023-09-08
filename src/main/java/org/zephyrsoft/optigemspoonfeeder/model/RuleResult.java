@@ -11,4 +11,12 @@ public class RuleResult {
 
 	private Mt940Entry input;
 	private Buchung result;
+
+	public void clearBuchung() {
+		result = null;
+	}
+
+	public boolean hasBuchung() {
+		return result != null;
+	}
 }

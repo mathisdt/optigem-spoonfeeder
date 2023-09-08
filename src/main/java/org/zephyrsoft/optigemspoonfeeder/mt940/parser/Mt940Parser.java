@@ -18,6 +18,8 @@
  */
 package org.zephyrsoft.optigemspoonfeeder.mt940.parser;
 
+import static java.util.stream.Collectors.joining;
+
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.math.BigDecimal;
@@ -30,9 +32,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry;
+import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry.SollHabenKennung;
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Record;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry.SollHabenKennung;
 
 /**
  * MT940 Parser.
@@ -143,13 +145,15 @@ public class Mt940Parser {
 
 		Mt940Entry currentEntry = null;
 		String currentAccount = null;
+		final List<String> originalLines = new ArrayList<>();
 		for (String line : mergedLines) {
+			originalLines.add(line);
 			if (line.startsWith(PREFIX_KONTOBEZEICHNUNG)) {
 				currentAccount = line.substring(PREFIX_KONTOBEZEICHNUNG.length());
 			}
 
 			if (line.startsWith(PREFIX_ENTRY_START)) {
-				currentEntry = nextEntry(mt940Record.getEntries(), currentEntry, currentAccount);
+				currentEntry = nextEntry(mt940Record.getEntries(), currentEntry, currentAccount, originalLines);
 
 				line = line.substring(PREFIX_ENTRY_START.length());
 				line = parseDatumJJMMTT(currentEntry, line);
@@ -167,7 +171,7 @@ public class Mt940Parser {
 		}
 
 		// add the last one:
-		nextEntry(mt940Record.getEntries(), currentEntry, currentAccount);
+		nextEntry(mt940Record.getEntries(), currentEntry, currentAccount, originalLines);
 
 		return mt940Record;
 	}
@@ -199,11 +203,14 @@ public class Mt940Parser {
 	 * @param previousEntry entry to add if not null;
 	 * @return new working {@code Mt940Entry}
 	 */
-	private static Mt940Entry nextEntry(List<Mt940Entry> entries, Mt940Entry previousEntry, String currentAccount) {
+	private static Mt940Entry nextEntry(List<Mt940Entry> entries, Mt940Entry previousEntry, String currentAccount,
+			List<String> originalLines) {
 		if (previousEntry != null) {
 			entries.add(previousEntry);
+			previousEntry.setOriginalText(originalLines.stream().collect(joining("\n")));
 		}
 
+		originalLines.clear();
 		Mt940Entry entry = new Mt940Entry();
 		entry.setKontobezeichnung(currentAccount);
 		return entry;

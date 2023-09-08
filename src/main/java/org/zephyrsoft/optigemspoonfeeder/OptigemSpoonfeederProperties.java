@@ -12,4 +12,7 @@ import lombok.Setter;
 @Setter
 public class OptigemSpoonfeederProperties {
 	private Path dir;
+	private Integer gegenHauptkonto;
+	private Integer gegenUnterkonto;
+	private Integer gegenProjekt;
 }

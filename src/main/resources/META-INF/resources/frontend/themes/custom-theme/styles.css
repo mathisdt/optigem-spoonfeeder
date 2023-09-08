@@ -1,6 +1,11 @@
 vaadin-grid::part(red) {
-    color:red;
+	color: red;
 }
+
 vaadin-grid::part(green) {
-    color:green;
+	color: green;
+}
+
+vaadin-grid::part(yellow) {
+	background-color: rgb(255, 255, 120);
 }
