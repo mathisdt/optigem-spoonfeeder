@@ -16,7 +16,7 @@
  *
  *  Origin: https://github.com/ccavanaugh/jgnash
  */
-package net.bzzt.swift.mt940;
+package org.zephyrsoft.optigemspoonfeeder.mt940;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -67,6 +67,14 @@ public class Mt940Entry {
 		} else {
 			verwendungszweck += " ";
 			verwendungszweck += string.trim();
+		}
+	}
+
+	public BigDecimal getBetragMitVorzeichen() {
+		if (isDebit()) {
+			return betrag.negate();
+		} else {
+			return betrag;
 		}
 	}
 

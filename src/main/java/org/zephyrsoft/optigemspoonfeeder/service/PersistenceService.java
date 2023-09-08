@@ -28,9 +28,9 @@ public class PersistenceService {
 
 	private final OptigemSpoonfeederProperties properties;
 
-	public List<String> getRules() {
+	public String getRules() {
 		try {
-			return List.of(Files.readString(properties.getDir().resolve(RULES_FILENAME)).split("\n\s*+\n"));
+			return Files.readString(properties.getDir().resolve(RULES_FILENAME));
 		} catch (IOException e) {
 			throw new IllegalStateException("could not read rules from " + properties.getDir() + "/" + RULES_FILENAME,
 					e);

@@ -5,15 +5,16 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
+import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.model.SearchableString;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
+import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry;
+import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import lombok.RequiredArgsConstructor;
-import net.bzzt.swift.mt940.Mt940Entry;
-import net.bzzt.swift.mt940.Mt940File;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +22,7 @@ public class RuleService {
 	private final PersistenceService persistenceService;
 
 	public RulesResult apply(Mt940File input) {
-		List<String> rules = persistenceService.getRules();
+		String rules = persistenceService.getRules();
 		List<Table> tables = persistenceService.getTables();
 
 		Binding sharedData = new Binding();
@@ -31,7 +32,7 @@ public class RuleService {
 			sharedData.setProperty(table.getName(), table);
 		}
 
-		List<Buchung> converted = new ArrayList<>();
+		List<RuleResult> converted = new ArrayList<>();
 		List<Mt940Entry> rejected = new ArrayList<>();
 		for (Mt940Entry entry : input.getEntries()) {
 			sharedData.setProperty("eigenkonto", new SearchableString(entry.getKontobezeichnung()));
@@ -45,28 +46,15 @@ public class RuleService {
 			sharedData.setProperty("konto", new SearchableString(entry.getKontoNummer()));
 			sharedData.setProperty("name", new SearchableString(entry.getName()));
 
-			sharedData.setProperty("done", false);
+			Buchung booking = (Buchung) shell.evaluate("import org.zephyrsoft.optigemspoonfeeder.model.*\n" + rules);
 
-			Buchung booking = null;
-			for (String rule : rules) {
-				shell.evaluate("import org.zephyrsoft.optigemspoonfeeder.model.*\n" + rule);
-
-				if ((boolean) sharedData.getProperty("done")) {
-					if (sharedData.getProperty("buchung") == null) {
-						throw new IllegalStateException("marked as done, but no posting present");
-					}
-
-					booking = (Buchung) sharedData.getProperty("buchung");
-					break;
-				}
-			}
 			if (booking != null) {
 				// fill general data
 				booking.setDatum(entry.getValutaDatum());
 				booking.setIncoming(entry.isCredit());
 				booking.setBetrag(entry.getBetrag());
 
-				converted.add(booking);
+				converted.add(new RuleResult(entry, booking));
 			} else {
 				rejected.add(entry);
 			}

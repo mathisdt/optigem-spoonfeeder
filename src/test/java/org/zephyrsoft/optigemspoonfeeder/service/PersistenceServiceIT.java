@@ -1,10 +1,12 @@
 package org.zephyrsoft.optigemspoonfeeder.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,9 +36,8 @@ class PersistenceServiceIT {
 
 	@Test
 	void getRules() {
-		List<String> rules = service.getRules();
-		assertNotNull(rules);
-		assertEquals(4, rules.size());
+		String rules = service.getRules();
+		assertFalse(StringUtils.isBlank(rules));
 	}
 
 }

@@ -16,7 +16,7 @@
  *
  *  Origin: https://github.com/ccavanaugh/jgnash
  */
-package net.bzzt.swift.mt940;
+package org.zephyrsoft.optigemspoonfeeder.mt940;
 
 import java.util.ArrayList;
 import java.util.List;

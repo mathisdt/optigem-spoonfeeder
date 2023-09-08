@@ -1,0 +1,6 @@
+vaadin-grid::part(red) {
+    color:red;
+}
+vaadin-grid::part(green) {
+    color:green;
+}

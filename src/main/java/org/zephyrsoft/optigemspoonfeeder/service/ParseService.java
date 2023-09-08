@@ -6,9 +6,8 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 
 import org.springframework.stereotype.Service;
-
-import net.bzzt.swift.mt940.Mt940File;
-import net.bzzt.swift.mt940.parser.Mt940Parser;
+import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
+import org.zephyrsoft.optigemspoonfeeder.mt940.parser.Mt940Parser;
 
 @Service
 public class ParseService {

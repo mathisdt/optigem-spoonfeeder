@@ -16,7 +16,7 @@
  *
  *  Origin: https://github.com/ccavanaugh/jgnash
  */
-package net.bzzt.swift.mt940.parser;
+package org.zephyrsoft.optigemspoonfeeder.mt940.parser;
 
 import java.io.IOException;
 import java.io.LineNumberReader;
@@ -29,10 +29,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import net.bzzt.swift.mt940.Mt940Entry;
-import net.bzzt.swift.mt940.Mt940Entry.SollHabenKennung;
-import net.bzzt.swift.mt940.Mt940File;
-import net.bzzt.swift.mt940.Mt940Record;
+import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry;
+import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
+import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Record;
+import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry.SollHabenKennung;
 
 /**
  * MT940 Parser.

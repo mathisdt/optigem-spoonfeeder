@@ -6,10 +6,13 @@ public class SearchableString {
 
 	public SearchableString(String value) {
 		this.value = value;
-		valueLowercase = value.toLowerCase();
+		valueLowercase = value == null ? null : value.toLowerCase();
 	}
 
 	public boolean contains(String... terms) {
+		if (valueLowercase == null) {
+			return false;
+		}
 		for (String term : terms) {
 			if (valueLowercase.contains(term)) {
 				return true;
