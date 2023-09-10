@@ -43,7 +43,10 @@ import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Route("")
+@Slf4j
 class MainView extends VerticalLayout {
 
 	private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
@@ -58,7 +61,7 @@ class MainView extends VerticalLayout {
 	private String originalFilename;
 	private List<RuleResult> result;
 
-	private Span log;
+	private Span logText;
 	private Grid<RuleResult> grid;
 
 	private HorizontalLayout buttons;
@@ -138,10 +141,10 @@ class MainView extends VerticalLayout {
 
 		buttons = new HorizontalLayout();
 		buttons.setWidthFull();
-		log = new Span("noch keine Daten geladen");
-		log.addClassName("right");
-		log.setWidthFull();
-		HorizontalLayout bottom = new HorizontalLayout(buttons, log);
+		logText = new Span("noch keine Daten geladen");
+		logText.addClassName("right");
+		logText.setWidthFull();
+		HorizontalLayout bottom = new HorizontalLayout(buttons, logText);
 		bottom.setWidthFull();
 		add(bottom);
 
@@ -154,7 +157,8 @@ class MainView extends VerticalLayout {
 			timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
 			parsed = hibiscusImportService.read(month.getValue(), account.getValue());
 		} catch (Exception e) {
-			log.setText("Fehler: " + e.getMessage());
+			logText.setText("Fehler: " + e.getMessage());
+			log.warn("Fehler beim Laden von Hibiscus", e);
 		}
 	}
 
@@ -201,21 +205,23 @@ class MainView extends VerticalLayout {
 			timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
 			parsed = parseService.parse(inputStream);
 		} catch (Exception e) {
-			log.setText("Fehler: " + e.getMessage());
+			logText.setText("Fehler: " + e.getMessage());
+			log.warn("Fehler beim Parsen", e);
 		}
 	}
 
 	private void convertParsedData() {
 		try {
 			result = ruleService.apply(parsed);
-			log.setText(result.size() + " Buchungen geladen, davon "
+			logText.setText(result.size() + " Buchungen geladen, davon "
 					+ result.stream().filter(RuleResult::hasBuchung).count() + " zugeordnet");
 
 			grid.removeAllColumns();
 			grid.setItems(new ListDataProvider<>(result));
 			configureColumns();
 		} catch (Exception e) {
-			log.setText("Fehler: " + e.getMessage());
+			logText.setText("Fehler: " + e.getMessage());
+			log.warn("Fehler bei der Releanwendung", e);
 		}
 	}
 
