@@ -34,14 +34,18 @@ import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry.SollHabenKennung;
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Record;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class HibiscusImportService {
 
-	private final OptigemSpoonfeederProperties properties;
 	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+	private final OptigemSpoonfeederProperties properties;
+	private final XmlRpcClient client;
+
+	public HibiscusImportService(OptigemSpoonfeederProperties properties) {
+		this.properties = properties;
+		client = createXmlRpcClient();
+	}
 
 	public boolean isConfigured() {
 		return Objects.nonNull(properties.getHibiscusServerUrl())
@@ -49,9 +53,21 @@ public class HibiscusImportService {
 				&& StringUtils.isNotBlank(properties.getHibiscusServerPassword());
 	}
 
+	public boolean isReachable() {
+		try {
+			client.execute("hibiscus.xmlrpc.konto.find", Collections.emptyList());
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	public boolean isConfiguredAndReachable() {
+		return isConfigured() && isReachable();
+	}
+
 	public List<Konto> getKonten() {
 		if (isConfigured()) {
-			XmlRpcClient client = createXmlRpcClient();
 			Object result = null;
 			try {
 				result = client.execute("hibiscus.xmlrpc.konto.find", Collections.emptyList());
@@ -84,8 +100,6 @@ public class HibiscusImportService {
 
 	public Mt940File read(YearMonth month, Konto konto) {
 		List<Mt940Entry> entries = new ArrayList<>();
-
-		XmlRpcClient client = createXmlRpcClient();
 
 		Map<String, String> params = new HashMap<>();
 		params.put("datum:min", DATE.format(month.atDay(1)));

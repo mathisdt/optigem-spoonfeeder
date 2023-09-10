@@ -41,8 +41,6 @@ public class Mt940Entry {
 
 	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("YYMMdd");
 
-	private String originalText;
-
 	private String kontobezeichnung;
 
 	private LocalDate valutaDatum;
@@ -106,8 +104,9 @@ public class Mt940Entry {
 		return ":20:STARTUMS\n"
 				+ ":25:" + getKontobezeichnung() + "\n"
 				+ ":28C:1\n"
-				+ ":60F:C" + DATE.format(getValutaDatum()) + "EUR0,00\n"
-				+ getOriginalText() + "\n"
-				+ ":62F:C" + DATE.format(getValutaDatum()) + "EUR0,00";
+				+ ":60F:C" + DATE.format(getValutaDatum()) + "EUR0,00\n" // we don't know, so use zero
+				+ ":61:\n" // TODO
+				+ ":86:\n" // TODO
+				+ ":62F:C" + DATE.format(getValutaDatum()) + "EUR0,00"; // we don't know, so use zero
 	}
 }

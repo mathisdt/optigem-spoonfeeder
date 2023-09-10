@@ -18,8 +18,6 @@
  */
 package org.zephyrsoft.optigemspoonfeeder.mt940.parser;
 
-import static java.util.stream.Collectors.joining;
-
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.math.BigDecimal;
@@ -207,7 +205,6 @@ public class Mt940Parser {
 			List<String> originalLines) {
 		if (previousEntry != null) {
 			entries.add(previousEntry);
-			previousEntry.setOriginalText(originalLines.stream().collect(joining("\n")));
 		}
 
 		originalLines.clear();
@@ -245,7 +242,7 @@ public class Mt940Parser {
 		}
 
 		String decimal = line.substring(0, endIndex);
-		decimal = decimal.replaceAll(",", ".");
+		decimal = decimal.replace(",", ".");
 
 		// According to the MT940 Standard the amount (field :61:) could start with the
 		// last character of the currency

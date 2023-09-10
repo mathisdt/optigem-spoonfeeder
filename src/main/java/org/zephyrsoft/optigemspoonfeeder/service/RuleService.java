@@ -3,9 +3,11 @@ package org.zephyrsoft.optigemspoonfeeder.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.helpers.MessageFormatter;
 import org.springframework.stereotype.Service;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
+import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.model.SearchableString;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry;
@@ -14,13 +16,32 @@ import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RuleService {
+	private class LogWrapper {
+		private StringBuilder memory = new StringBuilder();
+
+		@SuppressWarnings("unused") // used in Groovy script
+		public void log(String msg, Object[] args) {
+			log.info(msg, args);
+			if (!memory.isEmpty()) {
+				memory.append("\n");
+			}
+			memory.append(MessageFormatter.arrayFormat(msg, args).getMessage());
+		}
+
+		public String getComplete() {
+			return memory.toString();
+		}
+	}
+
 	private final PersistenceService persistenceService;
 
-	public List<RuleResult> apply(Mt940File input) {
+	public RulesResult apply(Mt940File input) {
 		String rules = persistenceService.getRules();
 		List<Table> tables = persistenceService.getTables();
 
@@ -32,6 +53,7 @@ public class RuleService {
 		}
 
 		List<RuleResult> result = new ArrayList<>();
+		LogWrapper logWrapper = new LogWrapper();
 		for (Mt940Entry entry : input.getEntries()) {
 			sharedData.setProperty("eigenkonto", new SearchableString(entry.getKontobezeichnung()));
 			sharedData.setProperty("datum", entry.getValutaDatum());
@@ -43,8 +65,13 @@ public class RuleService {
 			sharedData.setProperty("bank", new SearchableString(entry.getBankKennung()));
 			sharedData.setProperty("konto", new SearchableString(entry.getKontoNummer()));
 			sharedData.setProperty("name", new SearchableString(entry.getName()));
+			sharedData.setProperty("logWrapper", logWrapper);
 
-			Buchung booking = (Buchung) shell.evaluate("import org.zephyrsoft.optigemspoonfeeder.model.*\n" + rules);
+			Buchung booking = (Buchung) shell.evaluate("import org.zephyrsoft.optigemspoonfeeder.model.*\n"
+					+ "def log(String msg, Object... args) {\n"
+					+ "  logWrapper.log(msg, args)\n"
+					+ "}\n"
+					+ rules);
 
 			if (booking != null) {
 				// fill general data
@@ -54,6 +81,6 @@ public class RuleService {
 			}
 			result.add(new RuleResult(entry, booking));
 		}
-		return result;
+		return new RulesResult(result, logWrapper.getComplete());
 	}
 }

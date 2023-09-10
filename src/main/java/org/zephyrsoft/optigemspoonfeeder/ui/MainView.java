@@ -11,6 +11,7 @@ import java.util.Locale;
 
 import org.zephyrsoft.optigemspoonfeeder.model.Konto;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
+import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
 import org.zephyrsoft.optigemspoonfeeder.service.ExportService;
 import org.zephyrsoft.optigemspoonfeeder.service.HibiscusImportService;
@@ -25,10 +26,12 @@ import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.grid.Grid.SelectionMode;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.UploadI18N;
@@ -59,10 +62,11 @@ class MainView extends VerticalLayout {
 	private String timestamp;
 	private Mt940File parsed;
 	private String originalFilename;
-	private List<RuleResult> result;
+	private RulesResult result;
 
-	private Span logText;
+	private Div logArea;
 	private Grid<RuleResult> grid;
+	private Span logText;
 
 	private HorizontalLayout buttons;
 
@@ -80,6 +84,8 @@ class MainView extends VerticalLayout {
 		reapplyRules.addClickListener(e -> applyRulesToParsedData());
 		reapplyRules.setEnabled(false);
 
+		boolean hibiscusConfiguredAndReachable = hibiscusImportService.isConfiguredAndReachable();
+
 		ComboBox<YearMonth> month = new ComboBox<>();
 		month.setWidthFull();
 		YearMonth currentMonth = YearMonth.now();
@@ -91,12 +97,14 @@ class MainView extends VerticalLayout {
 
 		ComboBox<Konto> account = new ComboBox<>();
 		account.setWidthFull();
-		List<Konto> konten = hibiscusImportService.getKonten();
-		account.setItems(konten);
-		account.setItemLabelGenerator(Konto::getBezeichnung);
-		if (!konten.isEmpty()) {
-			account.setValue(konten.get(0));
+		if (hibiscusConfiguredAndReachable) {
+			List<Konto> konten = hibiscusImportService.getKonten();
+			account.setItems(konten);
+			if (!konten.isEmpty()) {
+				account.setValue(konten.get(0));
+			}
 		}
+		account.setItemLabelGenerator(Konto::getBezeichnung);
 
 		Button loadFromHibiscusServerButton = new Button("von Hibiscus Server laden");
 		loadFromHibiscusServerButton
@@ -105,7 +113,7 @@ class MainView extends VerticalLayout {
 					applyRulesToParsedData();
 					reapplyRules.setEnabled(true);
 				});
-		loadFromHibiscusServerButton.setEnabled(hibiscusImportService.isConfigured());
+		loadFromHibiscusServerButton.setEnabled(hibiscusConfiguredAndReachable);
 
 		VerticalLayout loadFromHibiscusServer = new VerticalLayout(month, account, loadFromHibiscusServerButton);
 		loadFromHibiscusServer.setPadding(false);
@@ -130,7 +138,15 @@ class MainView extends VerticalLayout {
 			reapplyRules.setEnabled(true);
 		});
 
-		HorizontalLayout top = new HorizontalLayout(upload, loadFromHibiscusServer, reapplyRules);
+		logArea = new Div();
+		logArea.setWidthFull();
+		Scroller scroller = new Scroller(logArea);
+		scroller.setSizeFull();
+
+		HorizontalLayout topLeft = new HorizontalLayout(upload, loadFromHibiscusServer, reapplyRules);
+		topLeft.setPadding(false);
+		HorizontalLayout top = new HorizontalLayout(topLeft, scroller);
+		top.setWidthFull();
 		add(top);
 
 		grid = new Grid<>(RuleResult.class, false);
@@ -180,7 +196,7 @@ class MainView extends VerticalLayout {
 
 		StreamResource streamBuchungen = new StreamResource(
 				originalFilename.replaceFirst("\\.[^\\.]+$", "") + "_" + timestamp + "_buchungen.xlsx",
-				() -> exportService.createBuchungenExport(result));
+				() -> exportService.createBuchungenExport(result.getResults()));
 		Anchor downloadBuchungen = new Anchor(streamBuchungen, "");
 		downloadBuchungen.getElement().setAttribute("download", true);
 		// hack to make it look like a button:
@@ -189,7 +205,7 @@ class MainView extends VerticalLayout {
 
 		StreamResource streamRestMt940 = new StreamResource(
 				originalFilename.replaceFirst("\\.[^\\.]+$", "") + "_" + timestamp + "_rest.sta",
-				() -> exportService.createMt940Export(result));
+				() -> exportService.createMt940Export(result.getResults()));
 		Anchor downloadRestMt940 = new Anchor(streamRestMt940, "");
 		downloadRestMt940.getElement().setAttribute("download", true);
 		// hack to make it look like a button:
@@ -215,9 +231,10 @@ class MainView extends VerticalLayout {
 			result = ruleService.apply(parsed);
 			logText.setText(result.size() + " Buchungen geladen, davon "
 					+ result.stream().filter(RuleResult::hasBuchung).count() + " zugeordnet");
+			logArea.setText(result.getLogMessages());
 
 			grid.removeAllColumns();
-			grid.setItems(new ListDataProvider<>(result));
+			grid.setItems(new ListDataProvider<>(result.getResults()));
 			configureColumns();
 		} catch (Exception e) {
 			logText.setText("Fehler: " + e.getMessage());

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
+import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
 import org.zephyrsoft.optigemspoonfeeder.mt940.parser.Mt940Parser;
 
@@ -27,10 +28,11 @@ class RuleServiceIT {
 	void apply() throws Exception {
 		try (FileReader fileReader = new FileReader("src/test/resources/mt940/example.sta")) {
 			Mt940File input = Mt940Parser.parse(new LineNumberReader(fileReader));
-			List<RuleResult> rulesResult = service.apply(input);
+			RulesResult result = service.apply(input);
 
-			assertNotNull(rulesResult);
+			assertNotNull(result);
 
+			List<RuleResult> rulesResult = result.getResults();
 			assertNotNull(rulesResult);
 			assertEquals(8, rulesResult.size());
 
