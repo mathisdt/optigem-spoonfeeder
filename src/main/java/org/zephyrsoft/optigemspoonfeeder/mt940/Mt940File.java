@@ -21,14 +21,21 @@ package org.zephyrsoft.optigemspoonfeeder.mt940;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @ToString
 public class Mt940File {
+	@Builder.Default
 	private List<Mt940Record> records = new ArrayList<>();
 
 	public List<Mt940Entry> getEntries() {

@@ -9,3 +9,7 @@ vaadin-grid::part(green) {
 vaadin-grid::part(yellow) {
 	background-color: rgb(255, 255, 120);
 }
+
+.right {
+	text-align: right;
+}

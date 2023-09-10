@@ -1,37 +1,44 @@
 package org.zephyrsoft.optigemspoonfeeder.ui;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.zephyrsoft.optigemspoonfeeder.model.Konto;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
+import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
 import org.zephyrsoft.optigemspoonfeeder.service.ExportService;
+import org.zephyrsoft.optigemspoonfeeder.service.HibiscusImportService;
 import org.zephyrsoft.optigemspoonfeeder.service.ParseService;
 import org.zephyrsoft.optigemspoonfeeder.service.RuleService;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.Grid.Column;
 import com.vaadin.flow.component.grid.Grid.SelectionMode;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.upload.Upload;
+import com.vaadin.flow.component.upload.UploadI18N;
+import com.vaadin.flow.component.upload.UploadI18N.Uploading;
+import com.vaadin.flow.component.upload.UploadI18N.Uploading.Status;
 import com.vaadin.flow.component.upload.receivers.MultiFileMemoryBuffer;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.renderer.LocalDateRenderer;
 import com.vaadin.flow.data.renderer.NumberRenderer;
 import com.vaadin.flow.data.renderer.Renderer;
-import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
@@ -39,26 +46,27 @@ import com.vaadin.flow.server.StreamResource;
 @Route("")
 class MainView extends VerticalLayout {
 
-	private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("YYYY-MM-dd_hh-mm-ss");
+	private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+	private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
 
 	private final ParseService parseService;
 	private final RuleService ruleService;
-	private ExportService exportService;
+	private final ExportService exportService;
 
 	private String timestamp;
+	private Mt940File parsed;
 	private String originalFilename;
 	private List<RuleResult> result;
 
-	private MultiFileMemoryBuffer buffer;
-
-	private TextArea log;
+	private Span log;
 	private Grid<RuleResult> grid;
 
-	private HorizontalLayout bottom;
+	private HorizontalLayout buttons;
 
 	private HeaderRow headerRow;
 
-	MainView(ParseService parseService, RuleService ruleService, ExportService exportService) {
+	MainView(ParseService parseService, RuleService ruleService, ExportService exportService,
+			HibiscusImportService hibiscusImportService) {
 		this.parseService = parseService;
 		this.ruleService = ruleService;
 		this.exportService = exportService;
@@ -66,27 +74,60 @@ class MainView extends VerticalLayout {
 		setSizeFull();
 
 		Button reapplyRules = new Button("Regeln erneut anwenden");
-		reapplyRules.addClickListener(e -> applyRulesToUploadedFile());
+		reapplyRules.addClickListener(e -> applyRulesToParsedData());
 		reapplyRules.setEnabled(false);
 
-		buffer = new MultiFileMemoryBuffer();
+		ComboBox<YearMonth> month = new ComboBox<>();
+		month.setWidthFull();
+		YearMonth currentMonth = YearMonth.now();
+		month.setItems(availableMonths());
+		final DateTimeFormatter yearMonthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy");
+		month.setItemLabelGenerator(
+				ym -> yearMonthFormatter.format(ym) + (ym.equals(currentMonth) ? " (unvollständig)" : ""));
+		month.setValue(YearMonth.from(LocalDate.now().minusMonths(1)));
+
+		ComboBox<Konto> account = new ComboBox<>();
+		account.setWidthFull();
+		List<Konto> konten = hibiscusImportService.getKonten();
+		account.setItems(konten);
+		account.setItemLabelGenerator(Konto::getBezeichnung);
+		if (!konten.isEmpty()) {
+			account.setValue(konten.get(0));
+		}
+
+		Button loadFromHibiscusServerButton = new Button("von Hibiscus Server laden");
+		loadFromHibiscusServerButton
+				.addClickListener(e -> {
+					loadAndParseFromHibiscus(hibiscusImportService, month, account);
+					applyRulesToParsedData();
+					reapplyRules.setEnabled(true);
+				});
+		loadFromHibiscusServerButton.setEnabled(hibiscusImportService.isConfigured());
+
+		VerticalLayout loadFromHibiscusServer = new VerticalLayout(month, account, loadFromHibiscusServerButton);
+		loadFromHibiscusServer.setPadding(false);
+
+		MultiFileMemoryBuffer buffer = new MultiFileMemoryBuffer();
 		Upload upload = new Upload(buffer);
+		Button uploadButton = new Button("MT940-Datei hochladen");
+		upload.setUploadButton(uploadButton);
+		UploadI18N uploadI18N = new UploadI18N();
+		Uploading uploading = new Uploading();
+		Status status = new Status();
+		status.setProcessing("Verarbeite Datei...");
+		uploading.setStatus(status);
+		uploadI18N.setUploading(uploading);
+		upload.setI18n(uploadI18N);
 		upload.setMaxFiles(1);
+		upload.setDropAllowed(false);
 		upload.setWidthFull();
 		upload.addSucceededListener(event -> {
-			originalFilename = event.getFileName();
-			timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
-			applyRulesToUploadedFile();
+			parseUploadedFile(buffer.getInputStream(event.getFileName()), event.getFileName());
+			applyRulesToParsedData();
 			reapplyRules.setEnabled(true);
 		});
 
-		log = new TextArea();
-		log.setLabel("Log");
-		log.setValueChangeMode(ValueChangeMode.EAGER);
-		log.setWidthFull();
-
-		HorizontalLayout top = new HorizontalLayout(upload, reapplyRules, log);
-		top.setWidthFull();
+		HorizontalLayout top = new HorizontalLayout(upload, loadFromHibiscusServer, reapplyRules);
 		add(top);
 
 		grid = new Grid<>(RuleResult.class, false);
@@ -95,16 +136,43 @@ class MainView extends VerticalLayout {
 		grid.setPartNameGenerator(rr -> rr.hasBuchung() ? null : "yellow");
 		add(grid);
 
-		bottom = new HorizontalLayout();
+		buttons = new HorizontalLayout();
+		buttons.setWidthFull();
+		log = new Span("noch keine Daten geladen");
+		log.addClassName("right");
+		log.setWidthFull();
+		HorizontalLayout bottom = new HorizontalLayout(buttons, log);
 		bottom.setWidthFull();
 		add(bottom);
+
 	}
 
-	private void applyRulesToUploadedFile() {
-		InputStream inputStream = buffer.getInputStream(originalFilename);
-		convertUploadedFile(inputStream);
+	private void loadAndParseFromHibiscus(HibiscusImportService hibiscusImportService, ComboBox<YearMonth> month,
+			ComboBox<Konto> account) {
+		try {
+			originalFilename = MONTH_FORMAT.format(month.getValue()) + ".hibiscus";
+			timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
+			parsed = hibiscusImportService.read(month.getValue(), account.getValue());
+		} catch (Exception e) {
+			log.setText("Fehler: " + e.getMessage());
+		}
+	}
 
-		bottom.removeAll();
+	private List<YearMonth> availableMonths() {
+		List<YearMonth> monthList = new ArrayList<>();
+		LocalDate limit = LocalDate.now().minusYears(1).withDayOfYear(1);
+		LocalDate current = LocalDate.now();
+		while (current.isAfter(limit)) {
+			monthList.add(YearMonth.from(current));
+			current = current.minusMonths(1);
+		}
+		return monthList;
+	}
+
+	private void applyRulesToParsedData() {
+		convertParsedData();
+
+		buttons.removeAll();
 
 		StreamResource streamBuchungen = new StreamResource(
 				originalFilename.replaceFirst("\\.[^\\.]+$", "") + "_" + timestamp + "_buchungen.xlsx",
@@ -124,20 +192,30 @@ class MainView extends VerticalLayout {
 		downloadRestMt940.removeAll();
 		downloadRestMt940.add(new Button("Rest (MT940)", new Icon(VaadinIcon.DOWNLOAD)));
 
-		bottom.add(downloadBuchungen, downloadRestMt940);
+		buttons.add(downloadBuchungen, downloadRestMt940);
 	}
 
-	private void convertUploadedFile(InputStream inputStream) {
+	private void parseUploadedFile(InputStream inputStream, String filename) {
 		try {
-			result = ruleService.apply(parseService.parse(inputStream));
-			log.setValue("Ergebnis: " + result.size() + " Buchungen, davon "
+			originalFilename = filename;
+			timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
+			parsed = parseService.parse(inputStream);
+		} catch (Exception e) {
+			log.setText("Fehler: " + e.getMessage());
+		}
+	}
+
+	private void convertParsedData() {
+		try {
+			result = ruleService.apply(parsed);
+			log.setText(result.size() + " Buchungen geladen, davon "
 					+ result.stream().filter(RuleResult::hasBuchung).count() + " zugeordnet");
 
 			grid.removeAllColumns();
 			grid.setItems(new ListDataProvider<>(result));
 			configureColumns();
-		} catch (IOException e) {
-			log.setValue("Error: " + e.getMessage());
+		} catch (Exception e) {
+			log.setText("Fehler: " + e.getMessage());
 		}
 	}
 
