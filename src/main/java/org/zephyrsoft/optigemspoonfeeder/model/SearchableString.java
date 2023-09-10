@@ -31,6 +31,9 @@ public class SearchableString {
 			if (term.contains("ae") || term.contains("oe") || term.contains("ue")) {
 				additionalTermsToApply.add(term.replace("ae", "ä").replace("oe", "ö").replace("ue", "ü"));
 			}
+			if (term.contains("ä") || term.contains("ö") || term.contains("ü")) {
+				additionalTermsToApply.add(term.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue"));
+			}
 		}
 		termsToApply.addAll(additionalTermsToApply);
 
