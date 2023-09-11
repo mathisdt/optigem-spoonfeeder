@@ -1,0 +1,13 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  release:
+    uses: mathisdt/workflows/.github/workflows/maven.yaml@master
+    with:
+      pattern-to-release: optigem-spoonfeeder-*.zip
+    secrets: inherit
