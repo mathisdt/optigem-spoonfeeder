@@ -9,5 +9,6 @@ jobs:
   release:
     uses: mathisdt/workflows/.github/workflows/maven.yaml@master
     with:
+      additional-maven-parameters: -Pproduction
       pattern-to-release: optigem-spoonfeeder-*.jar
     secrets: inherit
