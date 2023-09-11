@@ -40,11 +40,13 @@ public class HibiscusImportService {
 	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
 	private final OptigemSpoonfeederProperties properties;
-	private final XmlRpcClient client;
+	private XmlRpcClient client;
 
 	public HibiscusImportService(OptigemSpoonfeederProperties properties) {
 		this.properties = properties;
-		client = createXmlRpcClient();
+		if (isConfiguredAndReachable()) {
+			client = createXmlRpcClient();
+		}
 	}
 
 	public boolean isConfigured() {
