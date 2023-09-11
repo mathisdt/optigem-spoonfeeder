@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>org.zephyrsoft</groupId>
 	<artifactId>optigem-spoonfeeder</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0-SNAPSHOT</version>
 	<name>optigem-spoonfeeder</name>
 	<description>Interprets MT940 and generates Optigem postings via rules.</description>
 	<properties>

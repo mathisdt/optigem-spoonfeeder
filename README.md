@@ -16,9 +16,9 @@ nicht von den Regeln erfasst werden, können Sie sie als MT940 exportieren und i
 
 ## Wie man beginnt
 
-Holen Sie sich ein Release dieses Projekts und Java 17 oder höher. Extrahieren Sie die ZIP-Datei, konfigurieren Sie
-die Grundlagen (siehe nächsten Abschnitt), starten Sie die enthaltene JAR-Datei und rufen Sie die Adresse
-`http://localhost:8080` im Browser auf.
+Holen Sie sich ein Release-JAR dieses Projekts und Java 17 oder höher. Konfigurieren Sie
+die Grundlagen (siehe nächsten Abschnitt), starten Sie die JAR-Datei (`java -jar filename.jar`)
+und rufen Sie die Adresse `http://localhost:8080` im Browser auf.
 
 ### Konfiguration
 
