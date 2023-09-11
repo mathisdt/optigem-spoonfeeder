@@ -18,12 +18,17 @@
  */
 package org.zephyrsoft.optigemspoonfeeder.mt940;
 
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 import org.apache.commons.lang3.StringUtils;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -32,14 +37,21 @@ import lombok.ToString;
 @Setter
 @ToString
 public class Mt940Entry {
+	@Getter
+	@AllArgsConstructor
 	public enum SollHabenKennung {
 		/** money was transferred to the current account */
-		CREDIT,
+		CREDIT("C", "051"),
 		/** money was transferred away from the current account */
-		DEBIT
+		DEBIT("D", "021");
+
+		private String abbrev;
+		private String gvc;
 	}
 
-	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("YYMMdd");
+	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("yyMMdd");
+	private static final DateTimeFormatter DATE_NOYEAR = DateTimeFormatter.ofPattern("MMdd");
+	private final NumberFormat waehrung;
 
 	private String kontobezeichnung;
 
@@ -55,6 +67,13 @@ public class Mt940Entry {
 	private String bankKennung;
 	private String kontoNummer;
 	private String name;
+
+	public Mt940Entry() {
+		waehrung = NumberFormat.getNumberInstance(Locale.GERMAN);
+		waehrung.setGroupingUsed(false);
+		waehrung.setMinimumFractionDigits(2);
+		waehrung.setMaximumFractionDigits(2);
+	}
 
 	public boolean isCredit() {
 		return sollHabenKennung == SollHabenKennung.CREDIT;
@@ -100,13 +119,41 @@ public class Mt940Entry {
 		}
 	}
 
-	public String getOriginalTextComplete() {
+	public String getAsMT940() {
 		return ":20:STARTUMS\n"
 				+ ":25:" + getKontobezeichnung() + "\n"
 				+ ":28C:1\n"
-				+ ":60F:C" + DATE.format(getValutaDatum()) + "EUR0,00\n" // we don't know, so use zero
-				+ ":61:\n" // TODO
-				+ ":86:\n" // TODO
-				+ ":62F:C" + DATE.format(getValutaDatum()) + "EUR0,00"; // we don't know, so use zero
+				+ ":60F:C" + DATE.format(getValutaDatum()) + "EUR0,00\n" // we don't know, but it's obligatory => use 0
+				+ ":61:" + DATE.format(valutaDatum) + DATE_NOYEAR.format(valutaDatum) + sollHabenKennung.getAbbrev()
+				+ "R" + waehrung.format(betrag) + "N" + "NONREF" + "\n"
+				+ ":86:" + sollHabenKennung.getGvc() + "?00" + buchungstext + getMt940VerwendungszweckString()
+				+ "?30" + bankKennung + "?31" + kontoNummer + "?32" + getMt940StringPart(name, 0)
+				+ (isNotEmpty(getMt940StringPart(name, 1)) ? "?33" + getMt940StringPart(name, 1) : "") + "\n"
+				+ ":62F:C" + DATE.format(getValutaDatum()) + "EUR0,00"; // we don't know, but it's obligatory => use 0
+	}
+
+	String getMt940VerwendungszweckString() {
+		String verw = getVerwendungszweckClean();
+
+		int field = 20;
+		StringBuilder result = new StringBuilder();
+
+		while (isNotEmpty(getMt940StringPart(verw, field - 20)) && field <= 29) {
+			result.append("?").append(field).append(getMt940StringPart(verw, field - 20));
+			field++;
+		}
+
+		return result.toString();
+	}
+
+	/** @param partIndex 0-based */
+	private String getMt940StringPart(String str, int partIndex) {
+		if (str.length() < partIndex * 27) {
+			return "";
+		} else if (str.length() < (partIndex + 1) * 27) {
+			return str.substring(partIndex * 27);
+		} else {
+			return str.substring(partIndex * 27, (partIndex + 1) * 27);
+		}
 	}
 }

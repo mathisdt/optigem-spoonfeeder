@@ -71,7 +71,7 @@ public class ExportService {
 	public InputStream createMt940Export(List<RuleResult> complete) {
 		return new StringInputStream(complete.stream()
 				.filter(rr -> !rr.hasBuchung())
-				.map(rr -> rr.getInput().getOriginalTextComplete())
+				.map(rr -> rr.getInput().getAsMT940())
 				.collect(joining("\n-\n", "", "\n-\n")), StandardCharsets.UTF_8);
 	}
 
