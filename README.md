@@ -1,6 +1,6 @@
 ![license](https://img.shields.io/github/license/mathisdt/optigem-spoonfeeder.svg?style=flat) [![Build](https://github.com/mathisdt/optigem-spoonfeeder/actions/workflows/build.yaml/badge.svg)](https://github.com/mathisdt/optigem-spoonfeeder/actions) [![last released](https://img.shields.io/github/release-date/mathisdt/optigem-spoonfeeder.svg?label=last%20released&style=flat)](https://github.com/mathisdt/optigem-spoonfeeder/releases)
 
-*Disclaimer: I'm in neither associated with nor paid by Optigem GmbH! I just happen to use their software.*
+*Disclaimer: I'm in neither associated with nor paid by Optigem GmbH. I just happen to use their software.*
 
 *This readme is in German as Optigem is a German-only product (it's not internationalized).*
 
@@ -114,7 +114,8 @@ if (haben && verwendungszweck.contains("spende", "opfer", "kollekte")
     } else if (verwendungszweck.contains("stichwort2")) {
         projekt = 11
     }
-    return new Buchung(8010, person.get("nr"), projekt, "Spende " + person.get("vorname") + " " + person.get("nachname"))
+    return new Buchung(8010, person.get("nr"), projekt,
+            "Spende " + person.get("vorname") + " " + person.get("nachname"))
 }
 ```
 
