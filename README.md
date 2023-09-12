@@ -70,10 +70,10 @@ if (soll && name.contains("Knappschaft-Bahn-See", "Krankenkasse")) {
 
 Diese Datentypen und zugehörigen Felder gibt es:
 
-* TEXT: eigenkonto, buchungstext, verwendungszweck, bank, konto, name
-* NUMMER: betrag
-* DATUM: datum
-* JA/NEIN: soll, haben
+* **TEXT**: eigenkonto, buchungstext, verwendungszweck, bank, konto, name
+* **ZAHL**: betrag
+* **DATUM**: datum
+* **JA/NEIN**: soll, haben
 
 Text-Felder besitzen eine `contains`-Methode, die Groß- und Kleinschreibung ignoriert sowie Umlaute
 auflöst. Es können beliebig viele Ausdrücke übergeben werden, die ODER-verknüpft gesucht werden
