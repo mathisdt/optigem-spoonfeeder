@@ -28,11 +28,13 @@ public class SearchableString {
 		// so check both
 		Set<String> additionalTermsToApply = new HashSet<>();
 		for (String term : termsToApply) {
-			if (term.contains("ae") || term.contains("oe") || term.contains("ue")) {
-				additionalTermsToApply.add(term.replace("ae", "ä").replace("oe", "ö").replace("ue", "ü"));
+			if (term.contains("ae") || term.contains("oe") || term.contains("ue") || term.contains("ss")) {
+				additionalTermsToApply
+						.add(term.replace("ae", "ä").replace("oe", "ö").replace("ue", "ü").replace("ss", "ß"));
 			}
-			if (term.contains("ä") || term.contains("ö") || term.contains("ü")) {
-				additionalTermsToApply.add(term.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue"));
+			if (term.contains("ä") || term.contains("ö") || term.contains("ü") || term.contains("ß")) {
+				additionalTermsToApply
+						.add(term.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss"));
 			}
 		}
 		termsToApply.addAll(additionalTermsToApply);
