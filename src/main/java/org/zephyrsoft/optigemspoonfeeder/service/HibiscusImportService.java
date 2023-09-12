@@ -34,6 +34,9 @@ import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry.SollHabenKennung;
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Record;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class HibiscusImportService {
 
@@ -44,22 +47,26 @@ public class HibiscusImportService {
 
 	public HibiscusImportService(OptigemSpoonfeederProperties properties) {
 		this.properties = properties;
-		if (isConfiguredAndReachable()) {
+		if (isConfigured()) {
 			client = createXmlRpcClient();
 		}
 	}
 
 	public boolean isConfigured() {
-		return Objects.nonNull(properties.getHibiscusServerUrl())
+		boolean result = Objects.nonNull(properties.getHibiscusServerUrl())
 				&& StringUtils.isNotBlank(properties.getHibiscusServerUsername())
 				&& StringUtils.isNotBlank(properties.getHibiscusServerPassword());
+		log.info("Hibiscus is configured: {}", result);
+		return result;
 	}
 
 	public boolean isReachable() {
 		try {
 			client.execute("hibiscus.xmlrpc.konto.find", Collections.emptyList());
+			log.info("Hibiscus is reachable: true");
 			return true;
 		} catch (Exception e) {
+			log.info("Hibiscus is reachable: false ({})", e.getMessage());
 			return false;
 		}
 	}
