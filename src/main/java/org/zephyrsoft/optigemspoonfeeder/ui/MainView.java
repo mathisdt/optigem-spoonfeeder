@@ -122,7 +122,7 @@ class MainView extends VerticalLayout {
 
 		MultiFileMemoryBuffer buffer = new MultiFileMemoryBuffer();
 		Upload upload = new Upload(buffer);
-		Button uploadButton = new Button("MT940-Datei hochladen");
+		Button uploadButton = new Button("MT940-Datei einlesen");
 		upload.setUploadButton(uploadButton);
 		UploadI18N uploadI18N = new UploadI18N();
 		Uploading uploading = new Uploading();
