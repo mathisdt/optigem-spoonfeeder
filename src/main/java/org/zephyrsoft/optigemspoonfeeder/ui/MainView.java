@@ -1,6 +1,7 @@
 package org.zephyrsoft.optigemspoonfeeder.ui;
 
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
 import org.zephyrsoft.optigemspoonfeeder.model.Konto;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
@@ -73,7 +75,7 @@ class MainView extends VerticalLayout {
 	private HeaderRow headerRow;
 
 	MainView(ParseService parseService, RuleService ruleService, ExportService exportService,
-			HibiscusImportService hibiscusImportService) {
+			HibiscusImportService hibiscusImportService, OptigemSpoonfeederProperties properties) {
 		this.parseService = parseService;
 		this.ruleService = ruleService;
 		this.exportService = exportService;
@@ -164,6 +166,14 @@ class MainView extends VerticalLayout {
 		bottom.setWidthFull();
 		add(bottom);
 
+		if (properties.getDir() == null) {
+			logArea.setText(
+					"Achtung - bitte Konfiguration überprüfen! Das Verzeichnis für Regeln und Tabellen ist nicht konfiguriert.");
+		} else if (!Files.exists(properties.getDir())) {
+			logArea.setText(
+					"Achtung - bitte Konfiguration überprüfen! Das Verzeichnis für Regeln und Tabellen kann nicht geöffnet werden: "
+							+ properties.getDir());
+		}
 	}
 
 	private void loadAndParseFromHibiscus(HibiscusImportService hibiscusImportService, ComboBox<YearMonth> month,
