@@ -86,8 +86,8 @@ public class RuleService {
 				booking.setBetrag(entry.getBetrag());
 				if (StringUtils.isNotBlank(entry.getVerwendungszweckClean())) {
 					booking.setBuchungstext(StringUtils.isNotBlank(booking.getBuchungstext())
-							? booking.getBuchungstext() + " - " + entry.getVerwendungszweckClean()
-							: entry.getVerwendungszweckClean());
+							? booking.getBuchungstext() + " - " + entry.getVerwendungszweckClean().trim()
+							: entry.getVerwendungszweckClean().trim());
 				}
 			}
 			result.add(new RuleResult(entry, booking));

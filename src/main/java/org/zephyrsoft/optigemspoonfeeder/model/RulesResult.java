@@ -5,9 +5,11 @@ import java.util.stream.Stream;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 
 @AllArgsConstructor
 @Getter
+@ToString
 public class RulesResult {
 	private List<RuleResult> results;
 	private String logMessages;

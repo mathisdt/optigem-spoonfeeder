@@ -38,17 +38,19 @@ class RuleServiceIT {
 
 			// matched:
 			assertThat(rulesResult)
-					.areExactly(1, matches(4940, 0, 0, null));
+					.areExactly(1, matches(4940, 0, 0, "Telekom"));
 			assertThat(rulesResult)
-					.areExactly(1, matches(8010, 2, 0, "Spende Vorname Test 2 Nachname Test 2"));
+					.areExactly(1, matches(8010, 2, 0, "Vorname Test 2 Nachname Test 2 - Spende"));
 			assertThat(rulesResult)
-					.areExactly(1, matches(8010, 1, 1, "Spende Vorname Test 1 Nachname Test 1"));
+					.areExactly(1, matches(8010, 1, 1, "Vorname Test 1 Nachname Test 1 - Troppa"));
 			assertThat(rulesResult)
-					.areExactly(1, matches(8205, 4, 21, null));
+					.areExactly(1, matches(8205, 4, 21, "GFYC-Freizeit"));
 			assertThat(rulesResult)
-					.areExactly(2, matches(8205, 5, 20, null));
+					.areExactly(1, matches(8205, 5, 20, "Roots-Freizeit"));
 			assertThat(rulesResult)
-					.areExactly(1, matches(1360, 0, 0, null));
+					.areExactly(1, matches(8205, 5, 20, "Freizeit Junge Erwachsene"));
+			assertThat(rulesResult)
+					.areExactly(1, matches(1360, 0, 0, "Bareinzahlung"));
 
 			// unmatched:
 			assertThat(rulesResult)

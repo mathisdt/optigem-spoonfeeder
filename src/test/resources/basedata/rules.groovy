@@ -17,13 +17,13 @@ if (verwendungszweck.contains("telefon", "telekom")) {
 if (verwendungszweck.contains("troppa", "tropper", "marius")
 		&& personen.contains("iban", konto)) {
 		person = personen.where("iban", konto)
-	return buchung(8010, person.get("nr"), 1, "Spende " + person.get("vorname") + " " + person.get("nachname"))
+	return buchung(8010, person.get("nr"), 1, person.get("vorname") + " " + person.get("nachname"))
 }
 
 if (verwendungszweck.contains("spende", "opfer", "gemeindebeitrag", "zehnt", "kollekte", "zuwendung")
 		&& personen.contains("iban", konto)) {
 	person = personen.where("iban", konto)
-	return buchung(8010, person.get("nr"), null, "Spende " + person.get("vorname") + " " + person.get("nachname"))
+	return buchung(8010, person.get("nr"), null, person.get("vorname") + " " + person.get("nachname"))
 }
 
 if (verwendungszweck.contains("bareinzahlung")) {

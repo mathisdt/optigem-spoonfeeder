@@ -4,9 +4,11 @@ import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
 @AllArgsConstructor
+@ToString
 public class RuleResult {
 
 	private Mt940Entry input;
