@@ -3,6 +3,7 @@ package org.zephyrsoft.optigemspoonfeeder.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.stereotype.Service;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
@@ -83,6 +84,11 @@ public class RuleService {
 				booking.setDatum(entry.getValutaDatum());
 				booking.setIncoming(entry.isCredit());
 				booking.setBetrag(entry.getBetrag());
+				if (StringUtils.isNotBlank(entry.getVerwendungszweckClean())) {
+					booking.setBuchungstext(StringUtils.isNotBlank(booking.getBuchungstext())
+							? booking.getBuchungstext() + " - " + entry.getVerwendungszweckClean()
+							: entry.getVerwendungszweckClean());
+				}
 			}
 			result.add(new RuleResult(entry, booking));
 		}

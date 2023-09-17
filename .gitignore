@@ -2,6 +2,7 @@ application-local.properties
 application-local.yaml
 application-local.yml
 /frontend
+/src/main/dev-bundle
 
 node_modules
 HELP.md
