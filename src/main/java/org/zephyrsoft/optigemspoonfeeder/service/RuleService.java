@@ -15,6 +15,7 @@ import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
+import groovy.lang.Script;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,6 +48,11 @@ public class RuleService {
 
 		Binding sharedData = new Binding();
 		GroovyShell shell = new GroovyShell(sharedData);
+		Script parsed = shell.parse("import org.zephyrsoft.optigemspoonfeeder.model.*\n"
+				+ "def log(String msg, Object... args) {\n"
+				+ "  logWrapper.log(msg, args)\n"
+				+ "}\n"
+				+ rules);
 
 		for (Table table : tables) {
 			sharedData.setProperty(table.getName(), table);
@@ -67,11 +73,7 @@ public class RuleService {
 			sharedData.setProperty("name", new SearchableString(entry.getName()));
 			sharedData.setProperty("logWrapper", logWrapper);
 
-			Buchung booking = (Buchung) shell.evaluate("import org.zephyrsoft.optigemspoonfeeder.model.*\n"
-					+ "def log(String msg, Object... args) {\n"
-					+ "  logWrapper.log(msg, args)\n"
-					+ "}\n"
-					+ rules);
+			Buchung booking = (Buchung) parsed.run();
 
 			if (booking != null) {
 				// fill general data
