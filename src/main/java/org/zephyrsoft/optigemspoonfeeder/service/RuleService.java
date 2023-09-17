@@ -63,6 +63,7 @@ public class RuleService {
 
 		List<RuleResult> result = new ArrayList<>();
 		LogWrapper logWrapper = new LogWrapper();
+		sharedData.setProperty("logWrapper", logWrapper);
 		for (Mt940Entry entry : input.getEntries()) {
 			sharedData.setProperty("eigenkonto", new SearchableString(entry.getKontobezeichnung()));
 			sharedData.setProperty("datum", entry.getValutaDatum());
@@ -74,7 +75,6 @@ public class RuleService {
 			sharedData.setProperty("bank", new SearchableString(entry.getBankKennung()));
 			sharedData.setProperty("konto", new SearchableString(entry.getKontoNummer()));
 			sharedData.setProperty("name", new SearchableString(entry.getName()));
-			sharedData.setProperty("logWrapper", logWrapper);
 
 			Buchung booking = (Buchung) parsed.run();
 
