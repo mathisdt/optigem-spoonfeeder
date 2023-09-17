@@ -60,11 +60,11 @@ der Datei `rules.groovy` im oben konfigurierten Verzeichnis. Hier ist ein einfac
 
 ```
 if (soll && verwendungszweck.contains("Gehalt")) {
-	return new Buchung(4110)
+	return buchung(4110)
 }
 
 if (soll && name.contains("Knappschaft-Bahn-See", "Krankenkasse")) {
-	return new Buchung(4130)
+	return buchung(4130)
 }
 ```
 
@@ -89,11 +89,11 @@ log("Betrag {} am {}", betrag, datum)
 Optigem-Buchungen können mit diesem Aufruf erzeugt werden:
 
 ```
-new Buchung(hauptkonto, unterkonto, projekt, buchungstext)
+buchung(hauptkonto, unterkonto, projekt, buchungstext)
 ```
 
-Dabei können von hinten Felder weggelassen werden, z.B. `new Buchung(8010, 15)`.
-Weiter vorn nicht gefüllte Felder können auf `null` gesetzt werden, z.B. `new Buchung(8010, null, 70)`
+Dabei können von hinten Felder weggelassen werden, z.B. `buchung(8010, 15)`.
+Weiter vorn nicht gefüllte Felder können auf `null` gesetzt werden, z.B. `buchung(8010, null, 70)`
 
 ### Tabellen
 
@@ -114,7 +114,7 @@ if (haben && verwendungszweck.contains("spende", "opfer", "kollekte")
     } else if (verwendungszweck.contains("stichwort2")) {
         projekt = 11
     }
-    return new Buchung(8010, person.get("nr"), projekt,
+    return buchung(8010, person.get("nr"), projekt,
             "Spende " + person.get("vorname") + " " + person.get("nachname"))
 }
 ```

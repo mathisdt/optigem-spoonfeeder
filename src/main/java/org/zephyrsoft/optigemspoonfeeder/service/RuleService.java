@@ -52,6 +52,9 @@ public class RuleService {
 				+ "def log(String msg, Object... args) {\n"
 				+ "  logWrapper.log(msg, args)\n"
 				+ "}\n"
+				+ "def buchung(Object hauptkonto, Object unterkonto = null, Object projekt = null, Object buchungstext = null) {\n"
+				+ "  return new Buchung(hauptkonto, unterkonto, projekt, buchungstext)\n"
+				+ "}\n"
 				+ rules);
 
 		for (Table table : tables) {

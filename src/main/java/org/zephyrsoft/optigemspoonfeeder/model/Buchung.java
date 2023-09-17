@@ -23,22 +23,10 @@ public class Buchung {
 	private BigDecimal betrag;
 	private String buchungstext;
 
-	public Buchung(Object hauptkonto) {
-		this.hauptkonto = num(hauptkonto);
-	}
-
-	public Buchung(Object hauptkonto, Object unterkonto) {
-		this(hauptkonto);
-		this.unterkonto = num(unterkonto);
-	}
-
-	public Buchung(Object hauptkonto, Object unterkonto, Object projekt) {
-		this(hauptkonto, unterkonto);
-		this.projekt = num(projekt);
-	}
-
 	public Buchung(Object hauptkonto, Object unterkonto, Object projekt, Object buchungstext) {
-		this(hauptkonto, unterkonto, projekt);
+		this.hauptkonto = num(hauptkonto);
+		this.unterkonto = num(unterkonto);
+		this.projekt = num(projekt);
 		this.buchungstext = str(buchungstext);
 	}
 
