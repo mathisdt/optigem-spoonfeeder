@@ -46,6 +46,7 @@ public class ExportService {
 						.add("HabenProj", b -> b.getHabenProj())
 						.add("HABENUPROJ", b -> 0)
 						.add("Betrag", b -> b.getBetrag())
+						// TODO consider max length in Optigem:
 						.add("BuchText", b -> b.getBuchText())
 						.add("Belegart", b -> null)
 						.add("BelegNr", b -> null)
