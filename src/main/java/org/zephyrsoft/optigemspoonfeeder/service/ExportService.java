@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
 import org.zephyrsoft.optigemspoonfeeder.model.BuchungForExport;
@@ -19,7 +20,9 @@ import com.coreoz.windmill.exports.config.ExportHeaderMapping;
 import com.helger.commons.io.stream.StringInputStream;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExportService {
@@ -40,33 +43,32 @@ public class ExportService {
 						.add("SollHK", b -> b.getSollHK())
 						.add("SollUK", b -> b.getSollUK())
 						.add("SollProj", b -> b.getSollProj())
-						.add("SOLLUPROJ", b -> 0)
 						.add("HabenHK", b -> b.getHabenHK())
 						.add("HabenUK", b -> b.getHabenUK())
 						.add("HabenProj", b -> b.getHabenProj())
-						.add("HABENUPROJ", b -> 0)
 						.add("Betrag", b -> b.getBetrag())
-						// TODO consider max length in Optigem:
-						.add("BuchText", b -> b.getBuchText())
-						.add("Belegart", b -> null)
-						.add("BelegNr", b -> null)
-						.add("SpendeDat", b -> null)
-						.add("ESP", b -> false)
-						.add("DB", b -> false)
-						.add("NichtSZB", b -> false)
-						.add("AktionsKz", b -> null)
-						.add("Stat_Land", b -> null)
-						.add("Stat_LandNr", b -> null)
-						.add("Stat_PLZ", b -> null)
+						.add("BuchText", b -> buchText(b))
+						.add("ESP", b -> 0)
+						.add("DB", b -> 0)
 						.add("ErfDat", b -> today)
-						.add("TEXTSCHLUESSEL", b -> null)
-						.add("Nummer", b -> null)
 						.add("StProzent", b -> 0)
 						.add("NettoBuch", b -> 1))
 				.asExcel()
 				.writeTo(outStream);
 
 		return new ByteArrayInputStream(outStream.toByteArray());
+	}
+
+	private static String buchText(BuchungForExport b) {
+		if (StringUtils.isEmpty(b.getBuchText())) {
+			// may not be empty
+			return " ";
+		} else if (b.getBuchText().length() > 52) {
+			log.info("truncated BuchText on {} ({}): {}", b.getDatum(), b.getBetrag(), b.getBuchText());
+			return b.getBuchText().substring(0, 52);
+		} else {
+			return b.getBuchText();
+		}
 	}
 
 	public InputStream createMt940Export(List<RuleResult> complete) {
