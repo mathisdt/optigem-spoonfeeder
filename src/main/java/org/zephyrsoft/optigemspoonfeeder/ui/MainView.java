@@ -45,12 +45,14 @@ import com.vaadin.flow.data.renderer.LocalDateRenderer;
 import com.vaadin.flow.data.renderer.NumberRenderer;
 import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.function.ValueProvider;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Route("")
+@PageTitle("Optigem-Spoonfeeder")
 @Slf4j
 class MainView extends VerticalLayout {
 
@@ -179,7 +181,7 @@ class MainView extends VerticalLayout {
 	private void loadAndParseFromHibiscus(HibiscusImportService hibiscusImportService, ComboBox<YearMonth> month,
 			ComboBox<Konto> account) {
 		try {
-			originalFilename = MONTH_FORMAT.format(month.getValue()) + ".hibiscus";
+			originalFilename = account.getValue().getBezeichnungForFilename() + "_" + MONTH_FORMAT.format(month.getValue()) + ".hibiscus";
 			timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
 			parsed = hibiscusImportService.read(month.getValue(), account.getValue());
 		} catch (Exception e) {
@@ -205,7 +207,7 @@ class MainView extends VerticalLayout {
 		buttons.removeAll();
 
 		StreamResource streamBuchungen = new StreamResource(
-				originalFilename.replaceFirst("\\.[^\\.]+$", "") + "_" + timestamp + "_buchungen.xlsx",
+				originalFilename.replaceFirst("\\.[^\\.]+$", "") + "_Stand_" + timestamp + "_buchungen.xlsx",
 				() -> exportService.createBuchungenExport(result.getResults()));
 		Anchor downloadBuchungen = new Anchor(streamBuchungen, "");
 		downloadBuchungen.getElement().setAttribute("download", true);
@@ -214,7 +216,7 @@ class MainView extends VerticalLayout {
 		downloadBuchungen.add(new Button("Buchungen", new Icon(VaadinIcon.DOWNLOAD)));
 
 		StreamResource streamRestMt940 = new StreamResource(
-				originalFilename.replaceFirst("\\.[^\\.]+$", "") + "_" + timestamp + "_rest.sta",
+				originalFilename.replaceFirst("\\.[^\\.]+$", "") + "_Stand_" + timestamp + "_rest.sta",
 				() -> exportService.createMt940Export(result.getResults()));
 		Anchor downloadRestMt940 = new Anchor(streamRestMt940, "");
 		downloadRestMt940.getElement().setAttribute("download", true);

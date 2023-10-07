@@ -52,7 +52,9 @@ public class ExportService {
 						.add("DB", b -> 0)
 						.add("ErfDat", b -> today)
 						.add("StProzent", b -> 0)
-						.add("NettoBuch", b -> 0))
+						.add("NettoBuch", b -> 0)
+                        .add("Belegart", b -> "")
+                        .add("BelegNr", b -> 0))
 				.asExcel()
 				.writeTo(outStream);
 

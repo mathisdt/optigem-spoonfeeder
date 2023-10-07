@@ -19,4 +19,8 @@ public class Konto implements Comparable<Konto> {
 	public int compareTo(Konto o) {
 		return COMPARATOR.compare(this, o);
 	}
+
+	public String getBezeichnungForFilename() {
+		return bezeichnung.replaceAll("[^a-zA-Z0-9]", "_").replaceAll("__", "_");
+	}
 }

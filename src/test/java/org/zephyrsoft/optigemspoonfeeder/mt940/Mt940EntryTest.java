@@ -10,6 +10,9 @@ class Mt940EntryTest {
 	void getMt940VerwendungszweckString() {
 		Mt940Entry entry = new Mt940Entry();
 
+		entry.setVerwendungszweck("");
+		assertEquals("", entry.getMt940VerwendungszweckString());
+
 		entry.setVerwendungszweck("short");
 		assertEquals("?20short", entry.getMt940VerwendungszweckString());
 
