@@ -93,9 +93,9 @@ public class HibiscusImportService {
 					String iban = fetched.get("iban");
 					String tableAccounts = null;
 					String tableProjects = null;
-					if (properties.getHibiscusServerAccount() != null
-							&& properties.getHibiscusServerAccount().containsKey(iban)) {
-						OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getHibiscusServerAccount().get(iban);
+					if (properties.getBankAccount() != null
+							&& properties.getBankAccount().containsKey(iban)) {
+						OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getBankAccount().get(iban);
 						name = accountProperties.getName();
 						tableAccounts = accountProperties.getTableAccounts();
 						tableProjects = accountProperties.getTableProjects();

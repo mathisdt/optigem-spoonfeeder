@@ -22,23 +22,31 @@ und rufen Sie die Adresse `http://localhost:8080` im Browser auf.
 
 ### Konfiguration
 
-Sie können eine Datei namens `application-local.properties` in das Verzeichnis, von dem aus Sie das JAR
+Sie können eine Datei namens `application-local.yaml` in das Verzeichnis, von dem aus Sie das JAR
 starten ("aktuelles Arbeitsverzeichnis"). In dieser Datei können Sie einige Konfigurationen vornehmen, von
 denen nur die erste (das Verzeichnis für Regeln und Tabellen) verpflichtend ist. Beispiel:
 
 ```
-org.zephyrsoft.optigem-spoonfeeder.dir=/home/yourusername/.optigem-spoonfeeder
+org:
+  zephyrsoft:
+    optigem-spoonfeeder:
+      dir: /home/yourusername/.optigem-spoonfeeder
 
-org.zephyrsoft.optigem-spoonfeeder.hibiscus-server-url=https://192.168.0.10:8080/xmlrpc/
-org.zephyrsoft.optigem-spoonfeeder.hibiscus-server-username=admin
-org.zephyrsoft.optigem-spoonfeeder.hibiscus-server-password=yourpassword
+      hibiscus-server-url: https://192.168.0.10:8080/xmlrpc/
+      hibiscus-server-username: admin
+      hibiscus-server-password: yourpassword
 
-org.zephyrsoft.optigem-spoonfeeder.hibiscus-server-account.DE63287492836458292740=Giro
-org.zephyrsoft.optigem-spoonfeeder.hibiscus-server-account.DE89284750281023426171=Savings
+      bank-account:
+        DE63287492836458292740:
+          name: Giro
+          table-accounts: girokonten
+          table-projects: giroprojekte
+        DE89284750281023426171:
+          name: Savings
 
-org.zephyrsoft.optigem-spoonfeeder.gegen-hauptkonto=1200
-org.zephyrsoft.optigem-spoonfeeder.gegen-unterkonto=0
-org.zephyrsoft.optigem-spoonfeeder.gegen-projekt=0
+      gegen-hauptkonto: 1200
+      gegen-unterkonto: 0
+      gegen-projekt: 0
 ```
 
 Die erste Zeile definiert, wo sich Ihre anderen Konfigurationsdateien befinden (siehe folgende Abschnitte).

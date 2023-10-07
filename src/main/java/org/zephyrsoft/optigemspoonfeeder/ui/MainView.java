@@ -345,7 +345,7 @@ class MainView extends VerticalLayout {
 				.setHeader("Löschen");
 		Column<RuleResult> resultHauptkonto = grid
 				.addColumn(rr -> rr.getResult() == null ? null : rr.getResult().getHauptkonto())
-				.setTooltipGenerator(rr -> rr.getResult() == null ? null : getKontoName(rr.getResult().getHauptkonto(), rr.getResult().getUnterkonto()))
+				.setTooltipGenerator(rr -> rr.getResult() == null ? null : getKontoName(rr.getResult().getHauptkonto(), 0))
 				.setFlexGrow(1)
 				.setAutoWidth(true)
 				.setResizable(true)

@@ -23,7 +23,7 @@ public class OptigemSpoonfeederProperties {
 	private String hibiscusServerUsername;
 	private String hibiscusServerPassword;
 	/** IBAN to description (optional) */
-	private Map<String, AccountProperties> hibiscusServerAccount;
+	private Map<String, AccountProperties> bankAccount;
 
 	@Getter
 	@Setter
