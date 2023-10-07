@@ -1,0 +1,12 @@
+spring:
+  main:
+    banner-mode: off
+  profiles:
+    active: local
+
+org:
+  zephyrsoft:
+    optigem-spoonfeeder:
+      gegen-hauptkonto: 1200
+      gegen-unterkonto: 0
+      gegen-projekt: 0

@@ -14,6 +14,8 @@ public class Konto implements Comparable<Konto> {
 	private final String bezeichnung;
 	private final String iban;
 	private final String id;
+	private final String tableAccounts;
+	private final String tableProjects;
 
 	@Override
 	public int compareTo(Konto o) {

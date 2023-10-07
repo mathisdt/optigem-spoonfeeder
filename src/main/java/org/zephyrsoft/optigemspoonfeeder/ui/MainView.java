@@ -10,14 +10,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.commons.lang3.StringUtils;
 import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
 import org.zephyrsoft.optigemspoonfeeder.model.Konto;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
+import org.zephyrsoft.optigemspoonfeeder.model.Table;
 import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
 import org.zephyrsoft.optigemspoonfeeder.service.ExportService;
 import org.zephyrsoft.optigemspoonfeeder.service.HibiscusImportService;
 import org.zephyrsoft.optigemspoonfeeder.service.ParseService;
+import org.zephyrsoft.optigemspoonfeeder.service.PersistenceService;
 import org.zephyrsoft.optigemspoonfeeder.service.RuleService;
 
 import com.vaadin.flow.component.button.Button;
@@ -62,9 +65,12 @@ class MainView extends VerticalLayout {
 	private final ParseService parseService;
 	private final RuleService ruleService;
 	private final ExportService exportService;
+	private final PersistenceService persistenceService;
 
 	private String timestamp;
 	private Mt940File parsed;
+	private Table tableOptigemAccounts;
+	private Table tableOptigemProjects;
 	private String originalFilename;
 	private RulesResult result;
 
@@ -77,10 +83,12 @@ class MainView extends VerticalLayout {
 	private HeaderRow headerRow;
 
 	MainView(ParseService parseService, RuleService ruleService, ExportService exportService,
-			HibiscusImportService hibiscusImportService, OptigemSpoonfeederProperties properties) {
+			HibiscusImportService hibiscusImportService, PersistenceService persistenceService,
+			OptigemSpoonfeederProperties properties) {
 		this.parseService = parseService;
 		this.ruleService = ruleService;
 		this.exportService = exportService;
+		this.persistenceService = persistenceService;
 
 		setSizeFull();
 
@@ -114,6 +122,7 @@ class MainView extends VerticalLayout {
 		loadFromHibiscusServerButton
 				.addClickListener(e -> {
 					loadAndParseFromHibiscus(hibiscusImportService, month, account);
+					loadTables(account);
 					applyRulesToParsedData();
 					reapplyRules.setEnabled(true);
 				});
@@ -187,6 +196,28 @@ class MainView extends VerticalLayout {
 		} catch (Exception e) {
 			logText.setText("Fehler: " + e.getMessage());
 			log.warn("Fehler beim Laden von Hibiscus", e);
+		}
+	}
+
+	private void loadTables(ComboBox<Konto> account) {
+		List<Table> tables = persistenceService.getTables();
+		if (StringUtils.isNotBlank(account.getValue().getTableAccounts())) {
+			tableOptigemAccounts = tables.stream()
+				.filter(t -> t.getName().equalsIgnoreCase(account.getValue().getTableAccounts()))
+				.findAny()
+				.orElseGet(()-> {
+					log.warn("konfigurierte Konten-Tabelle {} nicht gefunden", account.getValue().getTableAccounts());
+					return null;
+				});
+		}
+		if (StringUtils.isNotBlank(account.getValue().getTableProjects())) {
+			tableOptigemProjects = tables.stream()
+				.filter(t -> t.getName().equalsIgnoreCase(account.getValue().getTableProjects()))
+				.findAny()
+				.orElseGet(()-> {
+					log.warn("konfigurierte Projekte-Tabelle {} nicht gefunden", account.getValue().getTableProjects());
+					return null;
+				});
 		}
 	}
 
@@ -314,18 +345,21 @@ class MainView extends VerticalLayout {
 				.setHeader("Löschen");
 		Column<RuleResult> resultHauptkonto = grid
 				.addColumn(rr -> rr.getResult() == null ? null : rr.getResult().getHauptkonto())
+				.setTooltipGenerator(rr -> rr.getResult() == null ? null : getKontoName(rr.getResult().getHauptkonto(), rr.getResult().getUnterkonto()))
 				.setFlexGrow(1)
 				.setAutoWidth(true)
 				.setResizable(true)
 				.setHeader("Hauptkonto");
 		Column<RuleResult> resultUnterkonto = grid
 				.addColumn(rr -> rr.getResult() == null ? null : rr.getResult().getUnterkonto())
+				.setTooltipGenerator(rr -> rr.getResult() == null ? null : getKontoName(rr.getResult().getHauptkonto(), rr.getResult().getUnterkonto()))
 				.setFlexGrow(1)
 				.setAutoWidth(true)
 				.setResizable(true)
 				.setHeader("Unterkonto");
 		Column<RuleResult> resultProjekt = grid
 				.addColumn(rr -> rr.getResult() == null ? null : rr.getResult().getProjekt())
+				.setTooltipGenerator(rr -> rr.getResult() == null ? null : getProjektName(rr.getResult().getProjekt()))
 				.setFlexGrow(1)
 				.setAutoWidth(true)
 				.setResizable(true)
@@ -345,7 +379,23 @@ class MainView extends VerticalLayout {
 			headerRow.join(resultClearButton, resultHauptkonto, resultUnterkonto, resultProjekt, resultBuchungstext)
 					.setText("Optigem-Buchung");
 		}
+	}
 
+	private String getKontoName(int hk, int uk) {
+		return tableOptigemAccounts.getRows().stream()
+			.filter(r -> r.get("Hauptkonto") != null && r.get("Hauptkonto").equals(String.valueOf(hk))
+				&& r.get("Unterkonto") != null && r.get("Unterkonto").equals(String.valueOf(uk)))
+			.map(r -> r.get("Kontobezeichnung"))
+			.findFirst()
+			.orElse("?");
+	}
+
+	private String getProjektName(int nr) {
+		return tableOptigemProjects.getRows().stream()
+			.filter(r -> r.get("Nr") != null && r.get("Nr").equals(String.valueOf(nr)))
+			.map(r -> r.get("Name"))
+			.findFirst()
+			.orElse(null);
 	}
 
 	private Renderer<RuleResult> date(ValueProvider<RuleResult, LocalDate> valueProvider) {

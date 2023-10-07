@@ -91,11 +91,16 @@ public class HibiscusImportService {
 					Map<String, String> fetched = (Map<String, String>) object;
 					String name = fetched.get("name");
 					String iban = fetched.get("iban");
+					String tableAccounts = null;
+					String tableProjects = null;
 					if (properties.getHibiscusServerAccount() != null
 							&& properties.getHibiscusServerAccount().containsKey(iban)) {
-						name = properties.getHibiscusServerAccount().get(iban);
+						OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getHibiscusServerAccount().get(iban);
+						name = accountProperties.getName();
+						tableAccounts = accountProperties.getTableAccounts();
+						tableProjects = accountProperties.getTableProjects();
 					}
-					Konto account = new Konto(name, iban, fetched.get("id"));
+					Konto account = new Konto(name, iban, fetched.get("id"), tableAccounts, tableProjects);
 					ret.add(account);
 				}
 			}
