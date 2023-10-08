@@ -7,14 +7,12 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
-import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
-import org.zephyrsoft.optigemspoonfeeder.model.IdAndName;
 import org.zephyrsoft.optigemspoonfeeder.model.Konto;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
@@ -26,7 +24,6 @@ import org.zephyrsoft.optigemspoonfeeder.service.ParseService;
 import org.zephyrsoft.optigemspoonfeeder.service.PersistenceService;
 import org.zephyrsoft.optigemspoonfeeder.service.RuleService;
 
-import com.vaadin.flow.component.Focusable;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
@@ -42,13 +39,11 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.UploadI18N;
 import com.vaadin.flow.component.upload.UploadI18N.Uploading;
 import com.vaadin.flow.component.upload.UploadI18N.Uploading.Status;
 import com.vaadin.flow.component.upload.receivers.MultiFileMemoryBuffer;
-import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.renderer.LocalDateRenderer;
 import com.vaadin.flow.data.renderer.NumberRenderer;
@@ -63,10 +58,11 @@ import lombok.extern.slf4j.Slf4j;
 @Route("")
 @PageTitle("Optigem-Spoonfeeder")
 @Slf4j
-class MainView extends VerticalLayout {
+final class MainView extends VerticalLayout {
 
 	private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
 	private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
+	private static final Pattern PATTERN = Pattern.compile("\\.[^\\.]+$");
 
 	private final ParseService parseService;
 	private final RuleService ruleService;
@@ -87,10 +83,6 @@ class MainView extends VerticalLayout {
 	private HorizontalLayout buttons;
 
 	private HeaderRow headerRow;
-	private ComboBox<IdAndName> hauptkontoComboBox = new ComboBox<>();
-	private ComboBox<IdAndName> unterkontoComboBox = new ComboBox<>();
-	private ComboBox<IdAndName> projektComboBox = new ComboBox<>();
-	private TextField buchungstextField = new TextField();
 
 	MainView(ParseService parseService, RuleService ruleService, ExportService exportService,
 			HibiscusImportService hibiscusImportService, PersistenceService persistenceService,
@@ -229,47 +221,9 @@ class MainView extends VerticalLayout {
 					return null;
 				});
 		}
-
-		hauptkontoComboBox = new ComboBox<>();
-		hauptkontoComboBox.setWidthFull();
-		hauptkontoComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
-		unterkontoComboBox = new ComboBox<>();
-		unterkontoComboBox.setWidthFull();
-		unterkontoComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
-		projektComboBox = new ComboBox<>();
-		projektComboBox.setWidthFull();
-		projektComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
-
-		if (tableOptigemAccounts != null) {
-			hauptkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
-				.filter(r -> r.get("Hauptkonto") != null && r.get("Unterkonto") != null
-					&& r.get("Unterkonto").equals("0"))
-				.map(r -> new IdAndName(Integer.parseInt(r.get("Hauptkonto")), r.get("Kontobezeichnung")))
-				.toList()));
-			setCalculatedComboboxDropdownWidth(hauptkontoComboBox);
-
-			hauptkontoComboBox.addValueChangeListener(e -> {
-				if (e.getValue() != null) {
-					unterkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
-						.filter(r -> r.get("Hauptkonto") != null && r.get("Unterkonto") != null
-							&& r.get("Hauptkonto").equals(String.valueOf(e.getValue().getId())))
-						.map(r -> new IdAndName(Integer.parseInt(r.get("Unterkonto")), r.get("Kontobezeichnung")))
-						.toList()));
-					setCalculatedComboboxDropdownWidth(unterkontoComboBox);
-				} else {
-					unterkontoComboBox.setItems(Collections.emptyList());
-				}
-			});
-
-			projektComboBox.setItems(new ListDataProvider<>(tableOptigemProjects.getRows().stream()
-				.filter(r -> r.get("Nr") != null && r.get("Name") != null)
-				.map(r -> new IdAndName(Integer.parseInt(r.get("Nr")), r.get("Name")))
-				.toList()));
-			setCalculatedComboboxDropdownWidth(projektComboBox);
-		}
 	}
 
-	private List<YearMonth> availableMonths() {
+	private static List<YearMonth> availableMonths() {
 		List<YearMonth> monthList = new ArrayList<>();
 		LocalDate limit = LocalDate.now().minusYears(1).withDayOfYear(1);
 		LocalDate current = LocalDate.now();
@@ -286,7 +240,7 @@ class MainView extends VerticalLayout {
 		buttons.removeAll();
 
 		StreamResource streamBuchungen = new StreamResource(
-				originalFilename.replaceFirst("\\.[^\\.]+$", "") + "_Stand_" + timestamp + "_buchungen.xlsx",
+			PATTERN.matcher(originalFilename).replaceFirst("") + "_Stand_" + timestamp + "_buchungen.xlsx",
 				() -> exportService.createBuchungenExport(result.getResults()));
 		Anchor downloadBuchungen = new Anchor(streamBuchungen, "");
 		downloadBuchungen.getElement().setAttribute("download", true);
@@ -295,7 +249,7 @@ class MainView extends VerticalLayout {
 		downloadBuchungen.add(new Button("Buchungen", new Icon(VaadinIcon.DOWNLOAD)));
 
 		StreamResource streamRestMt940 = new StreamResource(
-				originalFilename.replaceFirst("\\.[^\\.]+$", "") + "_Stand_" + timestamp + "_rest.sta",
+				PATTERN.matcher(originalFilename).replaceFirst("") + "_Stand_" + timestamp + "_rest.sta",
 				() -> exportService.createMt940Export(result.getResults()));
 		Anchor downloadRestMt940 = new Anchor(streamRestMt940, "");
 		downloadRestMt940.getElement().setAttribute("download", true);
@@ -377,34 +331,13 @@ class MainView extends VerticalLayout {
 				.setResizable(true)
 				.setHeader("Buchungstext");
 
-		Column<RuleResult> resultClearButton = grid
-				.addComponentColumn(rr -> {
-					Button button = new Button(new Icon(VaadinIcon.CLOSE));
-					button.addClickListener(e -> {
-						if (grid.getEditor().isOpen()) {
-							grid.getEditor().cancel();
-						} else {
-							rr.clearBuchung();
-							grid.getDataProvider().refreshItem(rr);
-						}
-					});
-					button.setEnabled(rr.hasBuchung() || grid.getEditor().isOpen());
-					return button;
-				})
-				.setFlexGrow(1)
-				.setAutoWidth(true)
-				.setResizable(true)
-				.setHeader("Löschen");
 		Column<RuleResult> resultEditButton = grid
 				.addComponentColumn(rr -> {
 					Button button = new Button(new Icon(VaadinIcon.EDIT));
 					button.addClickListener(e -> {
-						if (grid.getEditor().isOpen()) {
-							grid.getEditor().save();
-						} else {
-							grid.getEditor().editItem(rr);
-							((Focusable<?>) grid.getColumnByKey("hauptkonto").getEditorComponent()).focus();
-						}
+						EditDialog editDialog = new EditDialog(tableOptigemAccounts, tableOptigemProjects, rr,
+							() -> grid.getDataProvider().refreshItem(rr));
+						editDialog.open();
 					});
 					return button;
 				})
@@ -417,7 +350,7 @@ class MainView extends VerticalLayout {
 				.setKey("hauptkonto")
 				.setTooltipGenerator(rr -> rr.getResult() == null ? null : getKontoName(rr.getResult().getHauptkonto(), 0))
 				.setFlexGrow(1)
-				.setWidth("120px")
+				.setWidth("110px")
 				.setResizable(true)
 				.setHeader("Hauptkonto");
 		Column<RuleResult> resultUnterkonto = grid
@@ -425,7 +358,7 @@ class MainView extends VerticalLayout {
 				.setKey("unterkonto")
 				.setTooltipGenerator(rr -> rr.getResult() == null ? null : getKontoName(rr.getResult().getHauptkonto(), rr.getResult().getUnterkonto()))
 				.setFlexGrow(1)
-				.setWidth("100px")
+				.setWidth("110px")
 				.setResizable(true)
 				.setHeader("Unterkonto");
 		Column<RuleResult> resultProjekt = grid
@@ -449,100 +382,9 @@ class MainView extends VerticalLayout {
 			headerRow = grid.prependHeaderRow();
 			headerRow.join(sourceDate, sourceAccount, sourceName, sourceText, sourceAmount, sourceBuchungstext)
 					.setText("Kontoumsatz");
-			headerRow.join(resultClearButton, resultEditButton, resultHauptkonto, resultUnterkonto, resultProjekt, resultBuchungstext)
+			headerRow.join(resultEditButton, resultHauptkonto, resultUnterkonto, resultProjekt, resultBuchungstext)
 					.setText("Optigem-Buchung");
 		}
-
-		Binder<RuleResult> binder = new Binder<>(RuleResult.class);
-		grid.getEditor().setBinder(binder);
-		grid.getEditor().setBuffered(true);
-
-		binder.forField(hauptkontoComboBox)
-			.bind(this::getHauptkonto, MainView::setHauptkonto);
-		resultHauptkonto.setEditorComponent(hauptkontoComboBox);
-
-		binder.forField(unterkontoComboBox)
-			.bind(this::getUnterkonto, MainView::setUnterkonto);
-		resultUnterkonto.setEditorComponent(unterkontoComboBox);
-
-		binder.forField(projektComboBox)
-			.bind(this::getProjekt, MainView::setProjekt);
-		resultProjekt.setEditorComponent(projektComboBox);
-
-		buchungstextField.setWidthFull();
-		binder.forField(buchungstextField)
-			.bind(MainView::getBuchungstext, MainView::setBuchungstext);
-		resultBuchungstext.setEditorComponent(buchungstextField);
-	}
-
-	private static void setCalculatedComboboxDropdownWidth(ComboBox<?> cmb) {
-		if (cmb.getDataProvider() instanceof ListDataProvider<?>) {
-			((ListDataProvider<?>) cmb.getDataProvider()).getItems().stream()
-				.mapToInt(o -> o.toString().length())
-				.max()
-				.ifPresent(width ->
-					cmb.getElement().getStyle().set("--vaadin-combo-box-overlay-width", width + 5 + "ch")
-				);
-		}
-	}
-
-	private IdAndName getHauptkonto(RuleResult rr) {
-		if (rr.getResult() == null) {
-			return null;
-		}
-		String name = getKontoName(rr.getResult().getHauptkonto(), 0);
-		return new IdAndName(rr.getResult().getHauptkonto(), name);
-	}
-
-	private static void setHauptkonto(RuleResult rr, IdAndName hk) {
-		if (rr.getResult() == null) {
-			rr.setResult(new Buchung(hk.getId(), null, null, null));
-		}
-		rr.getResult().setHauptkonto(hk.getId());
-	}
-
-	private IdAndName getUnterkonto(RuleResult rr) {
-		if (rr.getResult() == null) {
-			return null;
-		}
-		String name = getKontoName(rr.getResult().getHauptkonto(), rr.getResult().getUnterkonto());
-		return new IdAndName(rr.getResult().getUnterkonto(), name);
-	}
-
-	private static void setUnterkonto(RuleResult rr, IdAndName uk) {
-		if (rr.getResult() == null) {
-			rr.setResult(new Buchung(null, uk.getId(), null, null));
-		}
-		rr.getResult().setUnterkonto(uk.getId());
-	}
-
-	private IdAndName getProjekt(RuleResult  rr) {
-		if (rr.getResult() == null) {
-			return null;
-		}
-		String name = getProjektName(rr.getResult().getProjekt());
-		return new IdAndName(rr.getResult().getProjekt(), name);
-	}
-
-	private static void setProjekt(RuleResult rr, IdAndName proj) {
-		if (rr.getResult() == null) {
-			rr.setResult(new Buchung(null, null, proj.getId(), null));
-		}
-		rr.getResult().setProjekt(proj.getId());
-	}
-
-	private static String getBuchungstext(RuleResult rr) {
-		if (rr.getResult() == null) {
-			return null;
-		}
-		return rr.getResult().getBuchungstext();
-	}
-
-	private static void setBuchungstext(RuleResult rr, String buchungstext) {
-		if (rr.getResult() == null) {
-			rr.setResult(new Buchung(null, null, null, buchungstext));
-		}
-		rr.getResult().setBuchungstext(buchungstext);
 	}
 
 	private String getKontoName(int hk, int uk) {
@@ -568,11 +410,11 @@ class MainView extends VerticalLayout {
 			.orElse(null);
 	}
 
-	private Renderer<RuleResult> date(ValueProvider<RuleResult, LocalDate> valueProvider) {
+	private static Renderer<RuleResult> date(ValueProvider<RuleResult, LocalDate> valueProvider) {
 		return new LocalDateRenderer<>(valueProvider, "dd.MM.");
 	}
 
-	private Renderer<RuleResult> nr(ValueProvider<RuleResult, Number> valueProvider) {
+	private static Renderer<RuleResult> nr(ValueProvider<RuleResult, Number> valueProvider) {
 		return new NumberRenderer<>(valueProvider, "%,.2f €", Locale.GERMAN);
 	}
 }

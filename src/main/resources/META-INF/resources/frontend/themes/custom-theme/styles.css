@@ -2,7 +2,15 @@ vaadin-grid::part(red) {
 	color: red;
 }
 
+.red {
+	color: red;
+}
+
 vaadin-grid::part(green) {
+	color: green;
+}
+
+.green {
 	color: green;
 }
 
@@ -12,4 +20,8 @@ vaadin-grid::part(yellow) {
 
 .right {
 	text-align: right;
+}
+
+.spaced-form {
+    --vaadin-form-item-label-spacing: 50px;
 }

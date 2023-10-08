@@ -97,6 +97,12 @@ public class Mt940Entry {
 				.replaceAll("(SVWZ\\+|EREF\\+\\S* ?+|KREF\\+\\S* ?+|MREF\\+\\S* ?+)", "");
 	}
 
+	public String getVerwendungszweckCleanOneline() {
+		return getVerwendungszweckClean()
+			.replaceAll("\r?\n", " ")
+			.replaceAll("  ", "");
+	}
+
 	public String getBuchungstextClean() {
 		return buchungstext
 				.replace("UE", "Ü");
