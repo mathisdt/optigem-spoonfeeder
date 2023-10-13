@@ -6,12 +6,14 @@ import java.util.Collections;
 import java.util.Locale;
 
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
+import org.zephyrsoft.optigemspoonfeeder.model.Holder;
 import org.zephyrsoft.optigemspoonfeeder.model.IdAndName;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
 
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.Shortcuts;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -29,6 +31,7 @@ import com.vaadin.flow.data.provider.ListDataProvider;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@SuppressWarnings("NonSerializableFieldInSerializableClass")
 final class EditDialog extends Dialog {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.");
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getNumberInstance(Locale.GERMAN);
@@ -48,6 +51,9 @@ final class EditDialog extends Dialog {
 
         setWidth("65%");
         setResizable(true);
+        setDraggable(true);
+        setCloseOnEsc(true);
+        setCloseOnOutsideClick(true);
 
         setHeaderTitle("Buchung bearbeiten");
         Button closeButton = new Button(new Icon("lumo", "cross"),
@@ -66,21 +72,34 @@ final class EditDialog extends Dialog {
         Span buchungstext = new Span(rr.getInput().getBuchungstext());
 
         ComboBox<IdAndName> hauptkontoComboBox = new ComboBox<>();
+        hauptkontoComboBox.setId("hauptkontoComboBox");
         hauptkontoComboBox.setAutoOpen(true);
         hauptkontoComboBox.setWidthFull();
         hauptkontoComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
+        hauptkontoComboBox.addFocusListener(e -> {
+            hauptkontoComboBox.setOpened(true);
+        });
 
         ComboBox<IdAndName> unterkontoComboBox = new ComboBox<>();
+        unterkontoComboBox.setId("unterkontoComboBox");
         unterkontoComboBox.setAutoOpen(true);
         unterkontoComboBox.setWidthFull();
         unterkontoComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
+        unterkontoComboBox.addFocusListener(e -> {
+            unterkontoComboBox.setOpened(true);
+        });
 
         ComboBox<IdAndName> projektComboBox = new ComboBox<>();
+        projektComboBox.setId("projektComboBox");
         projektComboBox.setAutoOpen(true);
         projektComboBox.setWidthFull();
         projektComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
+        projektComboBox.addFocusListener(e -> {
+            projektComboBox.setOpened(true);
+        });
 
         TextField buchungstextField = new TextField();
+        buchungstextField.setId("buchungstextField");
         buchungstextField.setWidthFull();
 
         if (tableOptigemAccounts != null) {
@@ -90,19 +109,6 @@ final class EditDialog extends Dialog {
                 .map(r -> new IdAndName(Integer.parseInt(r.get("Hauptkonto")), r.get("Kontobezeichnung")))
                 .toList()));
             setCalculatedComboboxDropdownWidth(hauptkontoComboBox);
-
-            hauptkontoComboBox.addValueChangeListener(e -> {
-                if (e.getValue() != null) {
-                    unterkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
-                        .filter(r -> r.get("Hauptkonto") != null && r.get("Unterkonto") != null
-                            && r.get("Hauptkonto").equals(String.valueOf(e.getValue().getId())))
-                        .map(r -> new IdAndName(Integer.parseInt(r.get("Unterkonto")), r.get("Kontobezeichnung")))
-                        .toList()));
-                    setCalculatedComboboxDropdownWidth(unterkontoComboBox);
-                } else {
-                    unterkontoComboBox.setItems(Collections.emptyList());
-                }
-            });
         }
 
         if (tableOptigemProjects != null) {
@@ -156,10 +162,72 @@ final class EditDialog extends Dialog {
         HorizontalLayout buttons = new HorizontalLayout(FlexComponent.JustifyContentMode.BETWEEN, saveButton, deleteButton);
         add(buttons);
 
+        final Holder<Boolean> initializing = new Holder<>(true);
+
+        hauptkontoComboBox.addValueChangeListener(e -> {
+            if (e.getValue() != null && tableOptigemAccounts != null) {
+                unterkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
+                    .filter(r -> r.get("Hauptkonto") != null && r.get("Unterkonto") != null
+                        && r.get("Hauptkonto").equals(String.valueOf(e.getValue().getId())))
+                    .map(r -> new IdAndName(Integer.parseInt(r.get("Unterkonto")), r.get("Kontobezeichnung")))
+                    .toList()));
+                setCalculatedComboboxDropdownWidth(unterkontoComboBox);
+            } else {
+                unterkontoComboBox.setItems(Collections.emptyList());
+            }
+
+            int unterkontoOptionCount = ((ListDataProvider<?>) unterkontoComboBox.getDataProvider()).getItems().size();
+            if (unterkontoOptionCount == 1) {
+                unterkontoComboBox.setValue(
+                    (IdAndName) ((ListDataProvider<?>) unterkontoComboBox.getDataProvider()).getItems().stream().toList().get(0));
+            } else if (!initializing.getValue()) {
+                unterkontoComboBox.focus();
+            }
+        });
+        unterkontoComboBox.addValueChangeListener(e -> {
+            int projektOptionCount = ((ListDataProvider<?>) projektComboBox.getDataProvider()).getItems().size();
+            if (projektOptionCount == 1) {
+                projektComboBox.setValue(
+                    (IdAndName) ((ListDataProvider<?>) projektComboBox.getDataProvider()).getItems().stream().toList().get(0));
+            } else if (!initializing.getValue()) {
+                projektComboBox.focus();
+            }
+        });
+        projektComboBox.addValueChangeListener(e -> {
+            if (!projektComboBox.isEmpty() && !initializing.getValue()) {
+                buchungstextField.focus();
+            }
+        });
+
         binder.readBean(rr);
 
-        Shortcuts.addShortcutListener(this, this::close, Key.ESCAPE)
-            .listenOn(this);
+        initializing.setValue(false);
+
+        Shortcuts.addShortcutListener(hauptkontoComboBox, () -> applyFilterToId(hauptkontoComboBox), Key.ENTER)
+            .listenOn(hauptkontoComboBox);
+        Shortcuts.addShortcutListener(unterkontoComboBox, () -> applyFilterToId(unterkontoComboBox), Key.ENTER)
+            .listenOn(unterkontoComboBox);
+        Shortcuts.addShortcutListener(projektComboBox, () -> applyFilterToId(projektComboBox), Key.ENTER)
+            .listenOn(projektComboBox);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void applyFilterToId(final ComboBox<IdAndName> current) {
+        String currentId = current.getId().orElseThrow();
+        log.debug("{} filtering", currentId);
+        UI.getCurrent().getPage().executeJs("return document.getElementById('" + currentId + "').getElementsByTagName('input')[0].value;")
+            .then(String.class, str -> {
+                log.debug("{} filter={}", currentId, str);
+                ((ListDataProvider<IdAndName>) current.getDataProvider()).getItems().stream()
+                    .filter(e -> String.valueOf(e.getId()).equals(str))
+                    .findAny()
+                    .ifPresentOrElse(e -> {
+                        log.debug("{} filter={} => element={}", currentId, str, e);
+                        current.setValue(e);
+                    }, () -> {
+                        log.debug("{} filter={} => no element found", currentId, str);
+                    });
+            });
     }
 
     private static void setCalculatedComboboxDropdownWidth(ComboBox<?> cmb) {
@@ -168,7 +236,7 @@ final class EditDialog extends Dialog {
                 .mapToInt(o -> o.toString().length())
                 .max()
                 .ifPresent(width ->
-                    cmb.getElement().getStyle().set("--vaadin-combo-box-overlay-width", width + 5 + "ch")
+                    cmb.getElement().getStyle().set("--vaadin-combo-box-overlay-width", (width + 5) + "em")
                 );
         }
     }
@@ -200,7 +268,7 @@ final class EditDialog extends Dialog {
         if (rr.getResult() == null) {
             rr.setResult(new Buchung(null, uk.getId(), null, null));
         }
-        rr.getResult().setUnterkonto(uk.getId());
+        rr.getResult().setUnterkonto(uk == null ? 0 : uk.getId());
     }
 
     private IdAndName getProjekt(RuleResult rr) {
@@ -215,7 +283,7 @@ final class EditDialog extends Dialog {
         if (rr.getResult() == null) {
             rr.setResult(new Buchung(null, null, proj.getId(), null));
         }
-        rr.getResult().setProjekt(proj.getId());
+        rr.getResult().setProjekt(proj == null ? 0 : proj.getId());
     }
 
     private static String getBuchungstext(RuleResult rr) {

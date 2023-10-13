@@ -25,3 +25,9 @@ vaadin-grid::part(yellow) {
 .spaced-form {
     --vaadin-form-item-label-spacing: 50px;
 }
+
+.small-text-with-ellipsis {
+    font-size: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

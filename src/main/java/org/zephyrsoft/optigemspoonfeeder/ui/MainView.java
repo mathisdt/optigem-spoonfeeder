@@ -58,6 +58,7 @@ import lombok.extern.slf4j.Slf4j;
 @Route("")
 @PageTitle("Optigem-Spoonfeeder")
 @Slf4j
+@SuppressWarnings({"NonSerializableFieldInSerializableClass", "unused"})
 final class MainView extends VerticalLayout {
 
 	private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
@@ -76,11 +77,11 @@ final class MainView extends VerticalLayout {
 	private String originalFilename;
 	private RulesResult result;
 
-	private Div logArea;
-	private Grid<RuleResult> grid;
-	private Span logText;
+	private final Div logArea;
+	private final Grid<RuleResult> grid;
+	private final Span logText;
 
-	private HorizontalLayout buttons;
+	private final HorizontalLayout buttons;
 
 	private HeaderRow headerRow;
 
@@ -346,7 +347,16 @@ final class MainView extends VerticalLayout {
 				.setResizable(true)
 				.setHeader("Bearbeiten");
 		Column<RuleResult> resultHauptkonto = grid
-				.addColumn(rr -> rr.getResult() == null ? null : rr.getResult().getHauptkonto())
+				.addComponentColumn(rr -> {
+					Span main = new Span(rr.getResult() == null ? "" : String.valueOf(rr.getResult().getHauptkonto()));
+					Span sub = new Span(rr.getResult() == null ? "" : getKontoName(rr.getResult().getHauptkonto(), 0));
+					sub.setWidthFull();
+					sub.addClassName("small-text-with-ellipsis");
+					VerticalLayout layout = new VerticalLayout(main, sub);
+					layout.setPadding(false);
+					layout.setSpacing(false);
+					return layout;
+				})
 				.setKey("hauptkonto")
 				.setTooltipGenerator(rr -> rr.getResult() == null ? null : getKontoName(rr.getResult().getHauptkonto(), 0))
 				.setFlexGrow(1)
@@ -354,7 +364,16 @@ final class MainView extends VerticalLayout {
 				.setResizable(true)
 				.setHeader("Hauptkonto");
 		Column<RuleResult> resultUnterkonto = grid
-				.addColumn(rr -> rr.getResult() == null ? null : rr.getResult().getUnterkonto())
+				.addComponentColumn(rr -> {
+					Span main = new Span(rr.getResult() == null ? "" : String.valueOf(rr.getResult().getUnterkonto()));
+					Span sub = new Span(rr.getResult() == null ? "" : getKontoName(rr.getResult().getHauptkonto(), rr.getResult().getUnterkonto()));
+					sub.setWidthFull();
+					sub.addClassName("small-text-with-ellipsis");
+					VerticalLayout layout = new VerticalLayout(main, sub);
+					layout.setPadding(false);
+					layout.setSpacing(false);
+					return layout;
+				})
 				.setKey("unterkonto")
 				.setTooltipGenerator(rr -> rr.getResult() == null ? null : getKontoName(rr.getResult().getHauptkonto(), rr.getResult().getUnterkonto()))
 				.setFlexGrow(1)
@@ -362,7 +381,16 @@ final class MainView extends VerticalLayout {
 				.setResizable(true)
 				.setHeader("Unterkonto");
 		Column<RuleResult> resultProjekt = grid
-				.addColumn(rr -> rr.getResult() == null ? null : rr.getResult().getProjekt())
+				.addComponentColumn(rr -> {
+					Span main = new Span(rr.getResult() == null ? "" : String.valueOf(rr.getResult().getProjekt()));
+					Span sub = new Span(rr.getResult() == null ? "" : getProjektName(rr.getResult().getProjekt()));
+					sub.setWidthFull();
+					sub.addClassName("small-text-with-ellipsis");
+					VerticalLayout layout = new VerticalLayout(main, sub);
+					layout.setPadding(false);
+					layout.setSpacing(false);
+					return layout;
+				})
 				.setKey("projekt")
 				.setTooltipGenerator(rr -> rr.getResult() == null ? null : getProjektName(rr.getResult().getProjekt()))
 				.setFlexGrow(1)

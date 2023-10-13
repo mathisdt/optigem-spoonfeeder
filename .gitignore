@@ -3,6 +3,12 @@ application-local.yaml
 application-local.yml
 /frontend
 /src/main/dev-bundle
+/package.json
+/package-lock.json
+/types.d.ts
+/vite.config.ts
+/vite.generated.ts
+/tsconfig.json
 
 node_modules
 HELP.md
