@@ -53,7 +53,6 @@ final class EditDialog extends Dialog {
         setResizable(true);
         setDraggable(true);
         setCloseOnEsc(true);
-        setCloseOnOutsideClick(true);
 
         setHeaderTitle("Buchung bearbeiten");
         Button closeButton = new Button(new Icon("lumo", "cross"),
@@ -180,7 +179,8 @@ final class EditDialog extends Dialog {
             if (unterkontoOptionCount == 1) {
                 unterkontoComboBox.setValue(
                     (IdAndName) ((ListDataProvider<?>) unterkontoComboBox.getDataProvider()).getItems().stream().toList().get(0));
-            } else if (!initializing.getValue()) {
+            } else if (!e.getHasValue().isEmpty() && !initializing.getValue()) {
+                hauptkontoComboBox.setOpened(false);
                 unterkontoComboBox.focus();
             }
         });
@@ -189,12 +189,14 @@ final class EditDialog extends Dialog {
             if (projektOptionCount == 1) {
                 projektComboBox.setValue(
                     (IdAndName) ((ListDataProvider<?>) projektComboBox.getDataProvider()).getItems().stream().toList().get(0));
-            } else if (!initializing.getValue()) {
+            } else if (!e.getHasValue().isEmpty() && !initializing.getValue()) {
+                unterkontoComboBox.setOpened(false);
                 projektComboBox.focus();
             }
         });
         projektComboBox.addValueChangeListener(e -> {
-            if (!projektComboBox.isEmpty() && !initializing.getValue()) {
+            if (!e.getHasValue().isEmpty() && !initializing.getValue()) {
+                projektComboBox.setOpened(false);
                 buchungstextField.focus();
             }
         });
@@ -209,6 +211,8 @@ final class EditDialog extends Dialog {
             .listenOn(unterkontoComboBox);
         Shortcuts.addShortcutListener(projektComboBox, () -> applyFilterToId(projektComboBox), Key.ENTER)
             .listenOn(projektComboBox);
+        Shortcuts.addShortcutListener(buchungstextField, saveButton::focus, Key.ENTER)
+            .listenOn(buchungstextField);
     }
 
     @SuppressWarnings("unchecked")
