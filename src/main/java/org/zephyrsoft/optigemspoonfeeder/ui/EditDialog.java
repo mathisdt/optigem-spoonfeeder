@@ -4,6 +4,7 @@ import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
 import org.zephyrsoft.optigemspoonfeeder.model.Holder;
@@ -35,6 +36,8 @@ import lombok.extern.slf4j.Slf4j;
 final class EditDialog extends Dialog {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.");
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getNumberInstance(Locale.GERMAN);
+    private static final Pattern EVERYTHING_AFTER_SPACE = Pattern.compile(" .*$");
+
     static {
         CURRENCY_FORMAT.setMinimumIntegerDigits(1);
         CURRENCY_FORMAT.setMinimumFractionDigits(2);
@@ -45,6 +48,7 @@ final class EditDialog extends Dialog {
     private final Table tableOptigemAccounts;
     private final Table tableOptigemProjects;
 
+    @SuppressWarnings("unchecked")
     public EditDialog(Table tableOptigemAccounts, Table tableOptigemProjects, RuleResult rr, Runnable updateTableRow) {
         this.tableOptigemAccounts = tableOptigemAccounts;
         this.tableOptigemProjects = tableOptigemProjects;
@@ -77,6 +81,7 @@ final class EditDialog extends Dialog {
         hauptkontoComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
         hauptkontoComboBox.addFocusListener(e -> {
             hauptkontoComboBox.setOpened(true);
+            UI.getCurrent().getPage().executeJs("document.getElementById('hauptkontoComboBox').getElementsByTagName('input')[0].select();");
         });
 
         ComboBox<IdAndName> unterkontoComboBox = new ComboBox<>();
@@ -86,6 +91,7 @@ final class EditDialog extends Dialog {
         unterkontoComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
         unterkontoComboBox.addFocusListener(e -> {
             unterkontoComboBox.setOpened(true);
+            UI.getCurrent().getPage().executeJs("document.getElementById('unterkontoComboBox').getElementsByTagName('input')[0].select();");
         });
 
         ComboBox<IdAndName> projektComboBox = new ComboBox<>();
@@ -95,6 +101,7 @@ final class EditDialog extends Dialog {
         projektComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
         projektComboBox.addFocusListener(e -> {
             projektComboBox.setOpened(true);
+            UI.getCurrent().getPage().executeJs("document.getElementById('projektComboBox').getElementsByTagName('input')[0].select();");
         });
 
         TextField buchungstextField = new TextField();
@@ -207,12 +214,24 @@ final class EditDialog extends Dialog {
 
         Shortcuts.addShortcutListener(hauptkontoComboBox, () -> applyFilterToId(hauptkontoComboBox), Key.ENTER)
             .listenOn(hauptkontoComboBox);
-        Shortcuts.addShortcutListener(unterkontoComboBox, () -> applyFilterToId(unterkontoComboBox), Key.ENTER)
+        Shortcuts.addShortcutListener(unterkontoComboBox, () -> {
+                applyFilterToId(unterkontoComboBox);
+                if (projektComboBox.isEmpty()) {
+                    unterkontoComboBox.setOpened(false);
+                    projektComboBox.setValue(((ListDataProvider<IdAndName>) projektComboBox.getDataProvider()).getItems().stream()
+                        .findFirst().orElse(null));
+                    projektComboBox.focus();
+                }
+            }, Key.ENTER)
             .listenOn(unterkontoComboBox);
         Shortcuts.addShortcutListener(projektComboBox, () -> applyFilterToId(projektComboBox), Key.ENTER)
             .listenOn(projektComboBox);
         Shortcuts.addShortcutListener(buchungstextField, saveButton::focus, Key.ENTER)
             .listenOn(buchungstextField);
+
+        if (hauptkontoComboBox.isEmpty()) {
+            hauptkontoComboBox.focus();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -221,15 +240,19 @@ final class EditDialog extends Dialog {
         log.debug("{} filtering", currentId);
         UI.getCurrent().getPage().executeJs("return document.getElementById('" + currentId + "').getElementsByTagName('input')[0].value;")
             .then(String.class, str -> {
-                log.debug("{} filter={}", currentId, str);
+                String filter = str == null
+                    ? null
+                    : EVERYTHING_AFTER_SPACE.matcher(str).replaceAll("");
+                log.debug("{} filter={}", currentId, filter);
                 ((ListDataProvider<IdAndName>) current.getDataProvider()).getItems().stream()
-                    .filter(e -> String.valueOf(e.getId()).equals(str))
+                    .filter(e -> String.valueOf(e.getId()).equals(filter))
                     .findAny()
                     .ifPresentOrElse(e -> {
-                        log.debug("{} filter={} => element={}", currentId, str, e);
+                        log.debug("{} filter={} => element={}", currentId, filter, e);
+                        current.setValue(null);
                         current.setValue(e);
                     }, () -> {
-                        log.debug("{} filter={} => no element found", currentId, str);
+                        log.debug("{} filter={} => no element found", currentId, filter);
                     });
             });
     }
