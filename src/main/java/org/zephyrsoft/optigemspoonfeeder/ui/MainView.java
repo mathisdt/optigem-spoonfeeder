@@ -275,9 +275,8 @@ final class MainView extends VerticalLayout {
 	private void convertParsedData() {
 		try {
 			result = ruleService.apply(parsed);
-			logText.setText(result.size() + " Buchungen geladen, davon "
-					+ result.stream().filter(RuleResult::hasBuchung).count() + " zugeordnet");
 			logArea.setText(result.getLogMessages());
+			updateStatusMessage();
 
 			grid.removeAllColumns();
 			grid.setItems(new ListDataProvider<>(result.getResults()));
@@ -286,6 +285,10 @@ final class MainView extends VerticalLayout {
 			logText.setText("Fehler: " + e.getMessage());
 			log.warn("Fehler bei der Releanwendung", e);
 		}
+	}
+	private void updateStatusMessage() {
+		logText.setText(result.size() + " Buchungen geladen, davon "
+				+ result.stream().filter(RuleResult::hasBuchung).count() + " zugeordnet");
 	}
 
 	private void configureColumns() {
@@ -337,7 +340,10 @@ final class MainView extends VerticalLayout {
 					Button button = new Button(new Icon(VaadinIcon.EDIT));
 					button.addClickListener(e -> {
 						EditDialog editDialog = new EditDialog(tableOptigemAccounts, tableOptigemProjects, rr,
-							() -> grid.getDataProvider().refreshItem(rr));
+							() -> {
+								grid.getDataProvider().refreshItem(rr);
+								updateStatusMessage();
+							});
 						editDialog.open();
 					});
 					return button;
