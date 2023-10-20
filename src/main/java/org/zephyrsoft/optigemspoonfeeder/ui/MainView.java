@@ -125,7 +125,7 @@ final class MainView extends VerticalLayout {
 		loadFromHibiscusServerButton
 				.addClickListener(e -> {
 					loadAndParseFromHibiscus(hibiscusImportService, month, account);
-					loadTables(account);
+					loadTables(account.getValue().getTableAccounts(), account.getValue().getTableProjects());
 					applyRulesToParsedData();
 					reapplyRules.setEnabled(true);
 				});
@@ -148,6 +148,17 @@ final class MainView extends VerticalLayout {
 		upload.addSucceededListener(event -> {
 			parseUploadedFile(buffer.getInputStream(event.getFileName()), event.getFileName());
 			applyRulesToParsedData();
+			if (!result.getResults().isEmpty()) {
+				String konto = result.getResults().get(0).getInput().getKontobezeichnung();
+				OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getBankAccount().get(konto);
+				if (accountProperties == null) {
+					accountProperties = properties.getBankAccountByDescription(konto);
+				}
+				if (accountProperties != null) {
+					log.debug("load tables for bank account {}", accountProperties);
+					loadTables(accountProperties.getTableAccounts(), accountProperties.getTableProjects());
+				}
+			}
 			reapplyRules.setEnabled(true);
 		});
 
@@ -199,23 +210,23 @@ final class MainView extends VerticalLayout {
 		}
 	}
 
-	private void loadTables(ComboBox<Konto> account) {
+	private void loadTables(String accountTableName, String projectsTableName) {
 		List<Table> tables = persistenceService.getTables();
-		if (StringUtils.isNotBlank(account.getValue().getTableAccounts())) {
+		if (StringUtils.isNotBlank(accountTableName)) {
 			tableOptigemAccounts = tables.stream()
-				.filter(t -> t.getName().equalsIgnoreCase(account.getValue().getTableAccounts()))
+				.filter(t -> t.getName().equalsIgnoreCase(accountTableName))
 				.findAny()
 				.orElseGet(()-> {
-					log.warn("konfigurierte Konten-Tabelle {} nicht gefunden", account.getValue().getTableAccounts());
+					log.warn("konfigurierte Konten-Tabelle {} nicht gefunden", accountTableName);
 					return null;
 				});
 		}
-		if (StringUtils.isNotBlank(account.getValue().getTableProjects())) {
+		if (StringUtils.isNotBlank(projectsTableName)) {
 			tableOptigemProjects = tables.stream()
-				.filter(t -> t.getName().equalsIgnoreCase(account.getValue().getTableProjects()))
+				.filter(t -> t.getName().equalsIgnoreCase(projectsTableName))
 				.findAny()
 				.orElseGet(()-> {
-					log.warn("konfigurierte Projekte-Tabelle {} nicht gefunden", account.getValue().getTableProjects());
+					log.warn("konfigurierte Projekte-Tabelle {} nicht gefunden", projectsTableName);
 					return null;
 				});
 		}

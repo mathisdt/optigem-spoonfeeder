@@ -39,6 +39,7 @@ org:
       bank-account:
         DE63287492836458292740:
           name: Giro
+          description: 28749283/6458292740
           table-accounts: girokonten
           table-projects: giroprojekte
         DE89284750281023426171:
@@ -53,8 +54,8 @@ Die erste Zeile definiert, wo sich Ihre anderen Konfigurationsdateien befinden (
 
 Der zweite Block verweist auf Ihren Hibiscus Payment Server. Wenn keiner verfügbar ist, lassen Sie dies einfach weg.
 
-Der dritte Block kann "schöne" Namen für Ihre Konten definieren, wenn sie von Hibiscus abgerufen werden.
-Wenn Sie kein Hibiscus verwenden, lassen Sie dies auch weg.
+Der dritte Block ist auch optional und enthält Metadaten für Ihre Konten. Das Feld "description" wird für die
+Identifikation des Kontos bei MT940-Imports verwendet, wenn die Kontobezeichnung nicht in den IBANs gefunden wurde.
 
 Der vierte Block gibt an, welches Optigem-Konto als Bankkonto angenommen werden soll. Die Regeln im nächsten
 Abschnitt führen zu einem Optigem-Konto für jede Bank-Buchung, aber Optigem nutzt doppelte Buchführung und

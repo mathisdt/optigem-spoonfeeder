@@ -29,7 +29,15 @@ public class OptigemSpoonfeederProperties {
 	@Setter
 	public static class AccountProperties {
 		private String name;
+		private String description;
 		private String tableAccounts;
 		private String tableProjects;
+	}
+
+	public AccountProperties getBankAccountByDescription(final String description) {
+		return bankAccount.values().stream()
+			.filter(a -> a.getDescription() != null && a.getDescription().equalsIgnoreCase(description))
+			.findAny()
+			.orElse(null);
 	}
 }
