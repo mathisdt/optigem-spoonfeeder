@@ -2,7 +2,9 @@ package org.zephyrsoft.optigemspoonfeeder.ui;
 
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -24,6 +26,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.page.PendingJavaScriptResult;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
@@ -47,6 +50,9 @@ final class EditDialog extends Dialog {
 
     private final Table tableOptigemAccounts;
     private final Table tableOptigemProjects;
+    private final Holder<Boolean> automaticFocusChangeAllowed = new Holder<>(true);
+    private final Holder<Boolean> openHauptkontoComboBox = new Holder<>(true);
+    private Runnable hauptkontoValueChangeTask;
 
     @SuppressWarnings("unchecked")
     public EditDialog(Table tableOptigemAccounts, Table tableOptigemProjects, RuleResult rr, Runnable updateTableRow) {
@@ -56,7 +62,7 @@ final class EditDialog extends Dialog {
         setWidth("65%");
         setResizable(true);
         setDraggable(true);
-        setCloseOnEsc(true);
+        setCloseOnOutsideClick(false);
 
         setHeaderTitle("Buchung bearbeiten");
         Button closeButton = new Button(new Icon("lumo", "cross"),
@@ -80,7 +86,11 @@ final class EditDialog extends Dialog {
         hauptkontoComboBox.setWidthFull();
         hauptkontoComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
         hauptkontoComboBox.addFocusListener(e -> {
-            hauptkontoComboBox.setOpened(true);
+            if (openHauptkontoComboBox.getValue()) {
+                hauptkontoComboBox.setOpened(true);
+            } else {
+                openHauptkontoComboBox.setValue(true);
+            }
             UI.getCurrent().getPage().executeJs("document.getElementById('hauptkontoComboBox').getElementsByTagName('input')[0].select();");
         });
 
@@ -182,29 +192,47 @@ final class EditDialog extends Dialog {
                 unterkontoComboBox.setItems(Collections.emptyList());
             }
 
-            int unterkontoOptionCount = ((ListDataProvider<?>) unterkontoComboBox.getDataProvider()).getItems().size();
-            if (unterkontoOptionCount == 1) {
-                unterkontoComboBox.setValue(
-                    (IdAndName) ((ListDataProvider<?>) unterkontoComboBox.getDataProvider()).getItems().stream().toList().get(0));
-            } else if (!e.getHasValue().isEmpty() && !initializing.getValue()) {
-                hauptkontoComboBox.setOpened(false);
-                unterkontoComboBox.focus();
+            List<IdAndName> unterkonten = new ArrayList<>(((ListDataProvider<IdAndName>) unterkontoComboBox.getDataProvider()).getItems());
+            if (unterkonten.size() == 1) {
+                unterkontoComboBox.setValue(unterkonten.get(0));
+            } else if (unterkonten.size() > 1) {
+                automaticFocusChangeAllowed.setValue(false);
+                unterkontoComboBox.setValue(unterkonten.get(0));
+                automaticFocusChangeAllowed.setValue(true);
+            }
+            if (!initializing.getValue() && unterkonten.size() > 1) {
+                e.getSource().setOpened(false);
+                if (automaticFocusChangeAllowed.getValue()) {
+                    unterkontoComboBox.focus();
+                }
+            }
+
+            if (hauptkontoValueChangeTask != null) {
+                hauptkontoValueChangeTask.run();
+                hauptkontoValueChangeTask = null;
             }
         });
         unterkontoComboBox.addValueChangeListener(e -> {
-            int projektOptionCount = ((ListDataProvider<?>) projektComboBox.getDataProvider()).getItems().size();
-            if (projektOptionCount == 1) {
-                projektComboBox.setValue(
-                    (IdAndName) ((ListDataProvider<?>) projektComboBox.getDataProvider()).getItems().stream().toList().get(0));
-            } else if (!e.getHasValue().isEmpty() && !initializing.getValue()) {
+            List<IdAndName> projekte = new ArrayList<>(((ListDataProvider<IdAndName>) projektComboBox.getDataProvider()).getItems());
+            if (projekte.size() == 1) {
+                projektComboBox.setValue(projekte.get(0));
+            }
+            if (!initializing.getValue()) {
+                if (projektComboBox.isEmpty()) {
+                    projektComboBox.setValue(projekte.get(0));
+                }
                 unterkontoComboBox.setOpened(false);
-                projektComboBox.focus();
+                if (automaticFocusChangeAllowed.getValue()) {
+                    projektComboBox.focus();
+                }
             }
         });
         projektComboBox.addValueChangeListener(e -> {
             if (!e.getHasValue().isEmpty() && !initializing.getValue()) {
                 projektComboBox.setOpened(false);
-                buchungstextField.focus();
+                if (automaticFocusChangeAllowed.getValue()) {
+                    buchungstextField.focus();
+                }
             }
         });
 
@@ -212,49 +240,92 @@ final class EditDialog extends Dialog {
 
         initializing.setValue(false);
 
-        Shortcuts.addShortcutListener(hauptkontoComboBox, () -> applyFilterToId(hauptkontoComboBox), Key.ENTER)
-            .listenOn(hauptkontoComboBox);
-        Shortcuts.addShortcutListener(unterkontoComboBox, () -> {
-                applyFilterToId(unterkontoComboBox);
-                if (projektComboBox.isEmpty()) {
-                    unterkontoComboBox.setOpened(false);
+        Shortcuts.addShortcutListener(hauptkontoComboBox, () -> {
+                hauptkontoValueChangeTask = () -> {
+                    boolean automaticFocusChangeWasAllowed = automaticFocusChangeAllowed.getValue();
+                    if (automaticFocusChangeWasAllowed) {
+                        automaticFocusChangeAllowed.setValue(false);
+                    }
+
+                    hauptkontoComboBox.setOpened(false);
+                    IdAndName selectedUnterkonto = unterkontoComboBox.getValue();
+                    unterkontoComboBox.setValue(((ListDataProvider<IdAndName>) unterkontoComboBox.getDataProvider()).getItems().stream()
+                        .findFirst().orElse(null));
+                    unterkontoComboBox.setValue(selectedUnterkonto);
+                    IdAndName selectedProjekt = projektComboBox.getValue();
                     projektComboBox.setValue(((ListDataProvider<IdAndName>) projektComboBox.getDataProvider()).getItems().stream()
                         .findFirst().orElse(null));
-                    projektComboBox.focus();
-                }
+                    projektComboBox.setValue(selectedProjekt);
+                    if (automaticFocusChangeWasAllowed) {
+                        automaticFocusChangeAllowed.setValue(true);
+                    }
+                };
+                applyFilter(hauptkontoComboBox);
             }, Key.ENTER)
+            .listenOn(hauptkontoComboBox);
+        Shortcuts.addShortcutListener(unterkontoComboBox, () -> applyFilter(unterkontoComboBox), Key.ENTER)
             .listenOn(unterkontoComboBox);
-        Shortcuts.addShortcutListener(projektComboBox, () -> applyFilterToId(projektComboBox), Key.ENTER)
+        Shortcuts.addShortcutListener(projektComboBox, () -> applyFilter(projektComboBox), Key.ENTER)
             .listenOn(projektComboBox);
         Shortcuts.addShortcutListener(buchungstextField, saveButton::focus, Key.ENTER)
             .listenOn(buchungstextField);
 
-        if (hauptkontoComboBox.isEmpty()) {
-            hauptkontoComboBox.focus();
-        }
+        openHauptkontoComboBox.setValue(false);
+        hauptkontoComboBox.focus();
     }
 
     @SuppressWarnings("unchecked")
-    private static void applyFilterToId(final ComboBox<IdAndName> current) {
+    private void applyFilter(final ComboBox<IdAndName> current) {
         String currentId = current.getId().orElseThrow();
-        log.debug("{} filtering", currentId);
-        UI.getCurrent().getPage().executeJs("return document.getElementById('" + currentId + "').getElementsByTagName('input')[0].value;")
-            .then(String.class, str -> {
-                String filter = str == null
+        PendingJavaScriptResult scriptResult =
+            UI.getCurrent().getPage().executeJs("return document.getElementById('" + currentId + "').getElementsByTagName('input')[0].value;");
+        scriptResult.then(String.class, filter -> {
+                String idFilter = filter == null
                     ? null
-                    : EVERYTHING_AFTER_SPACE.matcher(str).replaceAll("");
-                log.debug("{} filter={}", currentId, filter);
+                    : EVERYTHING_AFTER_SPACE.matcher(filter).replaceAll("");
                 ((ListDataProvider<IdAndName>) current.getDataProvider()).getItems().stream()
-                    .filter(e -> String.valueOf(e.getId()).equals(filter))
+                    .filter(e -> String.valueOf(e.getId()).equals(idFilter))
                     .findAny()
                     .ifPresentOrElse(e -> {
-                        log.debug("{} filter={} => element={}", currentId, filter, e);
+                        // filter for ID
+                        log.debug("{} idFilter={} => element={}", currentId, idFilter, e);
+                        boolean automaticFocusChangeWasAllowed = automaticFocusChangeAllowed.getValue();
+                        if (automaticFocusChangeWasAllowed) {
+                            automaticFocusChangeAllowed.setValue(false);
+                        }
                         current.setValue(null);
+                        if (automaticFocusChangeWasAllowed) {
+                            automaticFocusChangeAllowed.setValue(true);
+                        }
                         current.setValue(e);
                     }, () -> {
-                        log.debug("{} filter={} => no element found", currentId, filter);
+                        // filter for entry name
+                        String filterLowercase = filter == null ? null : filter.toLowerCase();
+                        List<IdAndName> filtered = ((ListDataProvider<IdAndName>) current.getDataProvider()).getItems().stream()
+                            .filter(e -> filterLowercase != null && e.getName().toLowerCase().contains(filterLowercase))
+                            .toList();
+                        if (filtered.size() == 1) {
+                            IdAndName found = filtered.get(0);
+                            log.debug("{} filter={} => element={}", currentId, filter, found);
+                            boolean automaticFocusChangeWasAllowed = automaticFocusChangeAllowed.getValue();
+                            if (automaticFocusChangeWasAllowed) {
+                                automaticFocusChangeAllowed.setValue(false);
+                            }
+                            current.setValue(null);
+                            if (automaticFocusChangeWasAllowed) {
+                                automaticFocusChangeAllowed.setValue(true);
+                            }
+                            current.setValue(found);
+                        } else {
+                            log.debug("{} filter={} idFilter={} => no element found", currentId, filter, idFilter);
+                        }
                     });
-            });
+            }, error -> log.debug("{} error while getting filter text: {}", currentId, error));
+        try {
+            scriptResult.toCompletableFuture().get();
+        } catch (Exception ignored) {
+            // do nothing
+        }
     }
 
     private static void setCalculatedComboboxDropdownWidth(ComboBox<?> cmb) {
