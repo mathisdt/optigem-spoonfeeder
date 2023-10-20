@@ -131,9 +131,6 @@ final class MainView extends VerticalLayout {
 				});
 		loadFromHibiscusServerButton.setEnabled(hibiscusConfiguredAndReachable);
 
-		VerticalLayout loadFromHibiscusServer = new VerticalLayout(month, account, loadFromHibiscusServerButton);
-		loadFromHibiscusServer.setPadding(false);
-
 		MultiFileMemoryBuffer buffer = new MultiFileMemoryBuffer();
 		Upload upload = new Upload(buffer);
 		Button uploadButton = new Button("MT940-Datei einlesen");
@@ -159,7 +156,7 @@ final class MainView extends VerticalLayout {
 		Scroller scroller = new Scroller(logArea);
 		scroller.setSizeFull();
 
-		HorizontalLayout topLeft = new HorizontalLayout(upload, loadFromHibiscusServer, reapplyRules);
+		HorizontalLayout topLeft = new HorizontalLayout(upload, month, account, loadFromHibiscusServerButton, reapplyRules);
 		topLeft.setPadding(false);
 		HorizontalLayout top = new HorizontalLayout(topLeft, scroller);
 		top.setWidthFull();
