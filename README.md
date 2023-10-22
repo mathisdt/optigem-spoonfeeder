@@ -132,3 +132,9 @@ if (haben && verwendungszweck.contains("spende", "opfer", "kollekte")
 
 Wenn sich an den Regeln oder Tabellen etwas geändert hat, muss die Software nicht neu gestartet werden.
 Bei jeder Regelausführung werden diese Dateien neu eingelesen.
+
+## Wichtig für Entwickler
+
+Hier findet [Project Lombok](https://projectlombok.org) Verwendung, evtl. muss also in der IDE das
+entsprechende Plugin installiert werden.
+
