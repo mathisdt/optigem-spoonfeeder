@@ -84,6 +84,8 @@ final class MainView extends VerticalLayout {
 	private final HorizontalLayout buttons;
 
 	private HeaderRow headerRow;
+	private Anchor downloadBuchungen;
+	private Anchor downloadRestMt940;
 
 	MainView(ParseService parseService, RuleService ruleService, ExportService exportService,
 			HibiscusImportService hibiscusImportService, PersistenceService persistenceService,
@@ -251,7 +253,7 @@ final class MainView extends VerticalLayout {
 		StreamResource streamBuchungen = new StreamResource(
 			PATTERN.matcher(originalFilename).replaceFirst("") + "_Stand_" + timestamp + "_buchungen.xlsx",
 				() -> exportService.createBuchungenExport(result.getResults()));
-		Anchor downloadBuchungen = new Anchor(streamBuchungen, "");
+		downloadBuchungen = new Anchor(streamBuchungen, "");
 		downloadBuchungen.getElement().setAttribute("download", true);
 		// hack to make it look like a button:
 		downloadBuchungen.removeAll();
@@ -260,13 +262,15 @@ final class MainView extends VerticalLayout {
 		StreamResource streamRestMt940 = new StreamResource(
 				PATTERN.matcher(originalFilename).replaceFirst("") + "_Stand_" + timestamp + "_rest.sta",
 				() -> ExportService.createMt940Export(result.getResults()));
-		Anchor downloadRestMt940 = new Anchor(streamRestMt940, "");
+		downloadRestMt940 = new Anchor(streamRestMt940, "");
 		downloadRestMt940.getElement().setAttribute("download", true);
 		// hack to make it look like a button:
 		downloadRestMt940.removeAll();
 		downloadRestMt940.add(new Button("Rest (MT940)", new Icon(VaadinIcon.DOWNLOAD)));
 
 		buttons.add(downloadBuchungen, downloadRestMt940);
+
+		updateFooter();
 	}
 
 	private void parseUploadedFile(InputStream inputStream, String filename) {
@@ -284,7 +288,7 @@ final class MainView extends VerticalLayout {
 		try {
 			result = ruleService.apply(parsed);
 			logArea.setText(result.getLogMessages());
-			updateStatusMessage();
+			updateFooter();
 
 			grid.removeAllColumns();
 			grid.setItems(new ListDataProvider<>(result.getResults()));
@@ -294,9 +298,16 @@ final class MainView extends VerticalLayout {
 			log.warn("Fehler bei der Releanwendung", e);
 		}
 	}
-	private void updateStatusMessage() {
-		logText.setText(result.size() + " Buchungen geladen, davon "
-				+ result.stream().filter(RuleResult::hasBuchung).count() + " zugeordnet");
+	private void updateFooter() {
+		int allPostings = result.size();
+		long mappedPostings = result.stream().filter(RuleResult::hasBuchung).count();
+		logText.setText(allPostings + " Buchungen geladen, davon " + mappedPostings + " zugeordnet");
+		if (downloadBuchungen != null) {
+			downloadBuchungen.setEnabled(mappedPostings > 0);
+		}
+		if (downloadRestMt940 != null) {
+			downloadRestMt940.setEnabled(mappedPostings < allPostings);
+		}
 	}
 
 	private void configureColumns() {
@@ -350,7 +361,7 @@ final class MainView extends VerticalLayout {
 						EditDialog editDialog = new EditDialog(tableOptigemAccounts, tableOptigemProjects, rr,
 							() -> {
 								grid.getDataProvider().refreshItem(rr);
-								updateStatusMessage();
+								updateFooter();
 							});
 						editDialog.open();
 					});
