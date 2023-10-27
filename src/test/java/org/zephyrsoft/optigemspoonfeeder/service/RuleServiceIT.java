@@ -15,8 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
-import org.zephyrsoft.optigemspoonfeeder.mt940.parser.Mt940Parser;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceFile;
+import org.zephyrsoft.optigemspoonfeeder.source.parser.Mt940Parser;
 
 @SpringBootTest(properties = { "org.zephyrsoft.optigem-spoonfeeder.dir=src/test/resources/basedata" })
 class RuleServiceIT {
@@ -27,7 +27,7 @@ class RuleServiceIT {
 	@Test
 	void apply() throws Exception {
 		try (FileReader fileReader = new FileReader("src/test/resources/mt940/example.sta")) {
-			Mt940File input = Mt940Parser.parse(new LineNumberReader(fileReader));
+			SourceFile input = Mt940Parser.parse(new LineNumberReader(fileReader));
 			RulesResult result = service.apply(input);
 
 			assertNotNull(result);

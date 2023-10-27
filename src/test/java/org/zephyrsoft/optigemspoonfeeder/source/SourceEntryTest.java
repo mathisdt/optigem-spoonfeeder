@@ -1,14 +1,14 @@
-package org.zephyrsoft.optigemspoonfeeder.mt940;
+package org.zephyrsoft.optigemspoonfeeder.source;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-class Mt940EntryTest {
+class SourceEntryTest {
 
 	@Test
 	void getMt940VerwendungszweckString() {
-		Mt940Entry entry = new Mt940Entry();
+		SourceEntry entry = new SourceEntry();
 
 		entry.setVerwendungszweck("");
 		assertEquals("", entry.getMt940VerwendungszweckString());

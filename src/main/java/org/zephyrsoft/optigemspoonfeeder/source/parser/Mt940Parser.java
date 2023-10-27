@@ -16,7 +16,7 @@
  *
  *  Origin: https://github.com/ccavanaugh/jgnash
  */
-package org.zephyrsoft.optigemspoonfeeder.mt940.parser;
+package org.zephyrsoft.optigemspoonfeeder.source.parser;
 
 import java.io.IOException;
 import java.io.LineNumberReader;
@@ -29,10 +29,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry.SollHabenKennung;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Record;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceEntry;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceEntry.SollHabenKennung;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceFile;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceRecord;
 
 /**
  * MT940 Parser.
@@ -59,12 +59,12 @@ public class Mt940Parser {
 	 * Parse the Mt940-file. Mt940 records are delimited by '-'.
 	 *
 	 * @param reader reader
-	 * @return Mt940File instance
+	 * @return SourceFile instance
 	 * @throws IOException            An IO exception occurred
 	 * @throws DateTimeParseException parse error occurred reading text
 	 */
-	public static Mt940File parse(final LineNumberReader reader) throws IOException, DateTimeParseException {
-		final Mt940File mt940File = new Mt940File();
+	public static SourceFile parse(final LineNumberReader reader) throws IOException, DateTimeParseException {
+		final SourceFile mt940File = new SourceFile();
 
 		List<String> recordLines = new ArrayList<>();
 
@@ -135,13 +135,13 @@ public class Mt940Parser {
 	 * @return and generate Mt940 Record
 	 * @throws DateTimeParseException parse error occurred reading text
 	 */
-	private static Mt940Record parseRecord(final List<String> recordLines) throws DateTimeParseException {
-		Mt940Record mt940Record = new Mt940Record();
+	private static SourceRecord parseRecord(final List<String> recordLines) throws DateTimeParseException {
+		SourceRecord mt940Record = new SourceRecord();
 
 		// Merge 'lines' that span multiple actual lines.
 		List<String> mergedLines = mergeLines(recordLines);
 
-		Mt940Entry currentEntry = null;
+		SourceEntry currentEntry = null;
 		String currentAccount = null;
 		final List<String> originalLines = new ArrayList<>();
 		for (String line : mergedLines) {
@@ -174,7 +174,7 @@ public class Mt940Parser {
 		return mt940Record;
 	}
 
-	private static void parseMehrzweckfeld(String mehrzweckfeld, Mt940Entry currentEntry) {
+	private static void parseMehrzweckfeld(String mehrzweckfeld, SourceEntry currentEntry) {
 		currentEntry.setGeschaeftsvorfallCode(mehrzweckfeld.substring(0, 3));
 		String separator = mehrzweckfeld.substring(3, 4);
 		String[] fields = mehrzweckfeld.substring(4).split(Pattern.quote(separator));
@@ -199,16 +199,16 @@ public class Mt940Parser {
 	 *
 	 * @param entries       entry list
 	 * @param previousEntry entry to add if not null;
-	 * @return new working {@code Mt940Entry}
+	 * @return new working {@code SourceEntry}
 	 */
-	private static Mt940Entry nextEntry(List<Mt940Entry> entries, Mt940Entry previousEntry, String currentAccount,
+	private static SourceEntry nextEntry(List<SourceEntry> entries, SourceEntry previousEntry, String currentAccount,
 			List<String> originalLines) {
 		if (previousEntry != null) {
 			entries.add(previousEntry);
 		}
 
 		originalLines.clear();
-		Mt940Entry entry = new Mt940Entry();
+		SourceEntry entry = new SourceEntry();
 		entry.setKontobezeichnung(currentAccount);
 		return entry;
 	}
@@ -231,11 +231,11 @@ public class Mt940Parser {
 	/**
 	 * Parse the value, put it into the entry.
 	 *
-	 * @param currentEntry working {@code Mt940Entry}
+	 * @param currentEntry working {@code SourceEntry}
 	 * @param line         line to parse decimal value from
 	 * @return the rest of the string to be parsed
 	 */
-	private static String parseBetrag(final Mt940Entry currentEntry, final String line) {
+	private static String parseBetrag(final SourceEntry currentEntry, final String line) {
 		int endIndex = line.indexOf('N');
 		if (endIndex < 0) {
 			endIndex = line.indexOf('F');
@@ -259,11 +259,11 @@ public class Mt940Parser {
 	/**
 	 * Parse the debit/credit value, put it into the entry.
 	 *
-	 * @param currentEntry working {@code Mt940Entry}
+	 * @param currentEntry working {@code SourceEntry}
 	 * @param string       credit / debit line to parse
 	 * @return the rest of the string to be parsed
 	 */
-	private static String parseSollHabenKennung(final Mt940Entry currentEntry, final String string) {
+	private static String parseSollHabenKennung(final SourceEntry currentEntry, final String string) {
 		String s = string;
 
 		if (string.startsWith("D")) {
@@ -281,12 +281,12 @@ public class Mt940Parser {
 	/**
 	 * Parse the formatted date, put it into the entry.
 	 *
-	 * @param currentEntry working {@code Mt940Entry}
+	 * @param currentEntry working {@code SourceEntry}
 	 * @param string       string to parse date from
 	 * @return the rest of the string to be parsed
 	 * @throws DateTimeParseException thrown if date format is bad
 	 */
-	private static String parseDatumJJMMTT(final Mt940Entry currentEntry, final String string)
+	private static String parseDatumJJMMTT(final SourceEntry currentEntry, final String string)
 			throws DateTimeParseException {
 		final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyMMdd");
 

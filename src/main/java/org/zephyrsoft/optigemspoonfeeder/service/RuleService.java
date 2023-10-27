@@ -3,7 +3,6 @@ package org.zephyrsoft.optigemspoonfeeder.service;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.stereotype.Service;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
@@ -11,8 +10,8 @@ import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.model.SearchableString;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceEntry;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceFile;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
@@ -43,7 +42,7 @@ public class RuleService {
 
 	private final PersistenceService persistenceService;
 
-	public RulesResult apply(Mt940File input) {
+	public RulesResult apply(SourceFile input) {
 		String rules = persistenceService.getRules();
 		List<Table> tables = persistenceService.getTables();
 
@@ -65,7 +64,7 @@ public class RuleService {
 		List<RuleResult> result = new ArrayList<>();
 		LogWrapper logWrapper = new LogWrapper();
 		sharedData.setProperty("logWrapper", logWrapper);
-		for (Mt940Entry entry : input.getEntries()) {
+		for (SourceEntry entry : input.getEntries()) {
 			sharedData.setProperty("eigenkonto", new SearchableString(entry.getKontobezeichnung()));
 			sharedData.setProperty("datum", entry.getValutaDatum());
 			sharedData.setProperty("soll", entry.isDebit());
@@ -79,17 +78,6 @@ public class RuleService {
 
 			Buchung booking = (Buchung) parsed.run();
 
-			if (booking != null) {
-				// fill general data
-				booking.setDatum(entry.getValutaDatum());
-				booking.setIncoming(entry.isCredit());
-				booking.setBetrag(entry.getBetrag());
-				if (StringUtils.isNotBlank(entry.getVerwendungszweckClean())) {
-					booking.setBuchungstext(StringUtils.isNotBlank(booking.getBuchungstext())
-							? booking.getBuchungstext() + " - " + entry.getVerwendungszweckClean().trim()
-							: entry.getVerwendungszweckClean().trim());
-				}
-			}
 			result.add(new RuleResult(entry, booking));
 		}
 		return new RulesResult(result, logWrapper.getComplete());

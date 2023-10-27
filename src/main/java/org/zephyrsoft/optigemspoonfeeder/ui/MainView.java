@@ -17,7 +17,7 @@ import org.zephyrsoft.optigemspoonfeeder.model.Konto;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceFile;
 import org.zephyrsoft.optigemspoonfeeder.service.ExportService;
 import org.zephyrsoft.optigemspoonfeeder.service.HibiscusImportService;
 import org.zephyrsoft.optigemspoonfeeder.service.ParseService;
@@ -71,7 +71,7 @@ final class MainView extends VerticalLayout {
 	private final PersistenceService persistenceService;
 
 	private String timestamp;
-	private Mt940File parsed;
+	private SourceFile parsed;
 	private Table tableOptigemAccounts;
 	private Table tableOptigemProjects;
 	private String originalFilename;
@@ -259,7 +259,7 @@ final class MainView extends VerticalLayout {
 
 		StreamResource streamRestMt940 = new StreamResource(
 				PATTERN.matcher(originalFilename).replaceFirst("") + "_Stand_" + timestamp + "_rest.sta",
-				() -> exportService.createMt940Export(result.getResults()));
+				() -> ExportService.createMt940Export(result.getResults()));
 		Anchor downloadRestMt940 = new Anchor(streamRestMt940, "");
 		downloadRestMt940.getElement().setAttribute("download", true);
 		// hack to make it look like a button:

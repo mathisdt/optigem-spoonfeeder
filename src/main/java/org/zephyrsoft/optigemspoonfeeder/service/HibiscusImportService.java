@@ -29,10 +29,10 @@ import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 import org.springframework.stereotype.Service;
 import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
 import org.zephyrsoft.optigemspoonfeeder.model.Konto;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Entry.SollHabenKennung;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940File;
-import org.zephyrsoft.optigemspoonfeeder.mt940.Mt940Record;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceEntry;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceEntry.SollHabenKennung;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceFile;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceRecord;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -112,8 +112,8 @@ public class HibiscusImportService {
 		}
 	}
 
-	public Mt940File read(YearMonth month, Konto konto) {
-		List<Mt940Entry> entries = new ArrayList<>();
+	public SourceFile read(YearMonth month, Konto konto) {
+		List<SourceEntry> entries = new ArrayList<>();
 
 		Map<String, String> params = new HashMap<>();
 		params.put("datum:min", DATE.format(month.atDay(1)));
@@ -132,7 +132,7 @@ public class HibiscusImportService {
 			for (Object object : array) {
 				@SuppressWarnings("unchecked")
 				Map<String, String> fetched = (Map<String, String>) object;
-				Mt940Entry posting = new Mt940Entry();
+				SourceEntry posting = new SourceEntry();
 				posting.setKontobezeichnung(konto.getIban());
 				posting.setBuchungstext(fetched.get("art"));
 				posting.setValutaDatum(LocalDate.parse(fetched.get("valuta"), DateTimeFormatter.ISO_LOCAL_DATE));
@@ -152,8 +152,8 @@ public class HibiscusImportService {
 			}
 		}
 		Collections.reverse(entries);
-		return Mt940File.builder()
-				.records(List.of(Mt940Record.builder()
+		return SourceFile.builder()
+				.records(List.of(SourceRecord.builder()
 						.entries(entries)
 						.build()))
 				.build();

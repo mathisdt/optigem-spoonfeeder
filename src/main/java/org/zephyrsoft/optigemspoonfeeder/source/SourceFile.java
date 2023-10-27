@@ -16,7 +16,7 @@
  *
  *  Origin: https://github.com/ccavanaugh/jgnash
  */
-package org.zephyrsoft.optigemspoonfeeder.mt940;
+package org.zephyrsoft.optigemspoonfeeder.source;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,13 +34,13 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class Mt940File {
+public class SourceFile {
 	@Builder.Default
-	private List<Mt940Record> records = new ArrayList<>();
+	private List<SourceRecord> records = new ArrayList<>();
 
-	public List<Mt940Entry> getEntries() {
-		List<Mt940Entry> retval = new ArrayList<>();
-		for (Mt940Record mt940Record : getRecords()) {
+	public List<SourceEntry> getEntries() {
+		List<SourceEntry> retval = new ArrayList<>();
+		for (SourceRecord mt940Record : getRecords()) {
 			retval.addAll(mt940Record.getEntries());
 		}
 		return retval;

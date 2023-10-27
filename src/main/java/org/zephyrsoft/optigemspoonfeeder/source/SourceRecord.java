@@ -16,7 +16,7 @@
  *
  *  Origin: https://github.com/ccavanaugh/jgnash
  */
-package org.zephyrsoft.optigemspoonfeeder.mt940;
+package org.zephyrsoft.optigemspoonfeeder.source;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +34,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class Mt940Record {
+public class SourceRecord {
 	@Builder.Default
-	private List<Mt940Entry> entries = new ArrayList<>();
+	private List<SourceEntry> entries = new ArrayList<>();
 }

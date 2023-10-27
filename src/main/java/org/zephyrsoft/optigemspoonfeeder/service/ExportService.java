@@ -30,8 +30,11 @@ public class ExportService {
 
 	public InputStream createBuchungenExport(List<RuleResult> complete) {
 		List<BuchungForExport> buchungen = complete.stream()
-				.filter(rr -> rr.hasBuchung())
-				.map(rr -> new BuchungForExport(rr.getResult(), properties))
+				.filter(RuleResult::hasBuchung)
+				.map(rr -> {
+					rr.fillGeneralData();
+					return new BuchungForExport(rr.getResult(), properties);
+				})
 				.toList();
 
 		final LocalDate today = LocalDate.now();
@@ -39,15 +42,15 @@ public class ExportService {
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 		Windmill.export(buchungen)
 				.withHeaderMapping(new ExportHeaderMapping<BuchungForExport>()
-						.add("Datum", b -> b.getDatum())
-						.add("SollHK", b -> b.getSollHK())
-						.add("SollUK", b -> b.getSollUK())
-						.add("SollProj", b -> b.getSollProj())
-						.add("HabenHK", b -> b.getHabenHK())
-						.add("HabenUK", b -> b.getHabenUK())
-						.add("HabenProj", b -> b.getHabenProj())
-						.add("Betrag", b -> b.getBetrag())
-						.add("BuchText", b -> buchText(b))
+						.add("Datum", BuchungForExport::getDatum)
+						.add("SollHK", BuchungForExport::getSollHK)
+						.add("SollUK", BuchungForExport::getSollUK)
+						.add("SollProj", BuchungForExport::getSollProj)
+						.add("HabenHK", BuchungForExport::getHabenHK)
+						.add("HabenUK", BuchungForExport::getHabenUK)
+						.add("HabenProj", BuchungForExport::getHabenProj)
+						.add("Betrag", BuchungForExport::getBetrag)
+						.add("BuchText", ExportService::buchText)
 						.add("ESP", b -> 0)
 						.add("DB", b -> 0)
 						.add("ErfDat", b -> today)
@@ -73,7 +76,7 @@ public class ExportService {
 		}
 	}
 
-	public InputStream createMt940Export(List<RuleResult> complete) {
+	public static InputStream createMt940Export(List<RuleResult> complete) {
 		return new StringInputStream(complete.stream()
 				.filter(rr -> !rr.hasBuchung())
 				.map(rr -> rr.getInput().getAsMT940())

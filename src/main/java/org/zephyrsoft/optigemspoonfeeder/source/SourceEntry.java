@@ -16,7 +16,7 @@
  *
  *  Origin: https://github.com/ccavanaugh/jgnash
  */
-package org.zephyrsoft.optigemspoonfeeder.mt940;
+package org.zephyrsoft.optigemspoonfeeder.source;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
@@ -36,7 +36,7 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public class Mt940Entry {
+public class SourceEntry {
 	@Getter
 	@AllArgsConstructor
 	public enum SollHabenKennung {
@@ -68,7 +68,7 @@ public class Mt940Entry {
 	private String kontoNummer;
 	private String name;
 
-	public Mt940Entry() {
+	public SourceEntry() {
 		waehrung = NumberFormat.getNumberInstance(Locale.GERMAN);
 		waehrung.setGroupingUsed(false);
 		waehrung.setMinimumFractionDigits(2);
