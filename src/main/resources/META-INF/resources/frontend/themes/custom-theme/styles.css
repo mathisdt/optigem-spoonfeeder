@@ -14,6 +14,11 @@ vaadin-grid::part(green) {
 	color: green;
 }
 
+.bold-orange {
+	color: #ff7421;
+    font-weight: bold;
+}
+
 vaadin-grid::part(yellow) {
 	background-color: rgb(255, 255, 120);
 }

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
 import org.zephyrsoft.optigemspoonfeeder.model.Holder;
 import org.zephyrsoft.optigemspoonfeeder.model.IdAndName;
@@ -235,6 +236,14 @@ final class EditDialog extends Dialog {
                 }
             }
         });
+        buchungstextField.addValueChangeListener(e -> {
+            if (tooLong(e.getOldValue()) && !tooLong(e.getValue())) {
+                buchungstextField.setHelperComponent(null);
+            } else if (!tooLong(e.getOldValue()) && tooLong(e.getValue())) {
+                buchungstextField.setHelperComponent(new Span("Text zu lang - wird in Optigem gekürzt."));
+                buchungstextField.getHelperComponent().setClassName("bold-orange");
+            }
+        });
 
         binder.readBean(rr);
 
@@ -272,6 +281,10 @@ final class EditDialog extends Dialog {
 
         openHauptkontoComboBox.setValue(false);
         hauptkontoComboBox.focus();
+    }
+
+    private static boolean tooLong(String str) {
+        return !StringUtils.isEmpty(str) && str.length() > 52;
     }
 
     @SuppressWarnings("unchecked")
