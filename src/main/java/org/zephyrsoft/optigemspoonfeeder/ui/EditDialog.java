@@ -247,6 +247,12 @@ final class EditDialog extends Dialog {
 
         binder.readBean(rr);
 
+        if (buchungstextField.isEmpty()) {
+            buchungstextField.setValue(StringUtils.isNotBlank(rr.getInput().getVerwendungszweckClean())
+                ? rr.getInput().getVerwendungszweckClean().trim() + " - " + rr.getInput().getName()
+                : rr.getInput().getName());
+        }
+
         initializing.setValue(false);
 
         Shortcuts.addShortcutListener(hauptkontoComboBox, () -> {
