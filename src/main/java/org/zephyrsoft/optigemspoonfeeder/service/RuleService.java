@@ -78,7 +78,9 @@ public class RuleService {
 
 			Buchung booking = (Buchung) parsed.run();
 
-			result.add(new RuleResult(entry, booking));
+			RuleResult ruleResult = new RuleResult(entry, booking);
+			ruleResult.fillGeneralData();
+			result.add(ruleResult);
 		}
 		return new RulesResult(result, logWrapper.getComplete());
 	}
