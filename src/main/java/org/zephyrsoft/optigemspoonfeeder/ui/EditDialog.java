@@ -163,6 +163,7 @@ final class EditDialog extends Dialog {
         Button saveButton = new Button("Speichern & Schließen", e -> {
             try {
                 binder.writeBean(rr);
+                rr.fillGeneralData();
                 updateTableRow.run();
                 close();
             } catch (ValidationException ex) {
