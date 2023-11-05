@@ -50,15 +50,26 @@ final class EditDialog extends Dialog {
     }
 
     private final Table tableOptigemAccounts;
+    private final String accountsColumnHk;
+    private final String accountsColumnUk;
+    private final String accountsColumnBez;
     private final Table tableOptigemProjects;
+    private final String projectsColumnNr;
+    private final String projectsColumnBez;
     private final Holder<Boolean> automaticFocusChangeAllowed = new Holder<>(true);
     private final Holder<Boolean> openHauptkontoComboBox = new Holder<>(true);
     private Runnable hauptkontoValueChangeTask;
 
     @SuppressWarnings("unchecked")
-    public EditDialog(Table tableOptigemAccounts, Table tableOptigemProjects, RuleResult rr, Runnable updateTableRow) {
+    public EditDialog(Table tableOptigemAccounts, String accountsColumnHk, String accountsColumnUk, String accountsColumnBez,
+        Table tableOptigemProjects, String projectsColumnNr, String projectsColumnBez, RuleResult rr, Runnable updateTableRow) {
         this.tableOptigemAccounts = tableOptigemAccounts;
+        this.accountsColumnHk = accountsColumnHk;
+        this.accountsColumnUk = accountsColumnUk;
+        this.accountsColumnBez = accountsColumnBez;
         this.tableOptigemProjects = tableOptigemProjects;
+        this.projectsColumnNr = projectsColumnNr;
+        this.projectsColumnBez = projectsColumnBez;
 
         setWidth("65%");
         setResizable(true);
@@ -121,17 +132,17 @@ final class EditDialog extends Dialog {
 
         if (tableOptigemAccounts != null) {
             hauptkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
-                .filter(r -> r.get("Hauptkonto") != null && r.get("Unterkonto") != null
-                    && r.get("Unterkonto").equals("0"))
-                .map(r -> new IdAndName(Integer.parseInt(r.get("Hauptkonto")), r.get("Kontobezeichnung")))
+                .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnUk) != null
+                    && r.get(accountsColumnUk).equals("0"))
+                .map(r -> new IdAndName(Integer.parseInt(r.get(accountsColumnHk)), r.get(accountsColumnBez)))
                 .toList()));
             setCalculatedComboboxDropdownWidth(hauptkontoComboBox);
         }
 
         if (tableOptigemProjects != null) {
             projektComboBox.setItems(new ListDataProvider<>(tableOptigemProjects.getRows().stream()
-                .filter(r -> r.get("Nr") != null && r.get("Name") != null)
-                .map(r -> new IdAndName(Integer.parseInt(r.get("Nr")), r.get("Name")))
+                .filter(r -> r.get(projectsColumnNr) != null && r.get(projectsColumnBez) != null)
+                .map(r -> new IdAndName(Integer.parseInt(r.get(projectsColumnNr)), r.get(projectsColumnBez)))
                 .toList()));
             setCalculatedComboboxDropdownWidth(projektComboBox);
         }
@@ -185,9 +196,9 @@ final class EditDialog extends Dialog {
         hauptkontoComboBox.addValueChangeListener(e -> {
             if (e.getValue() != null && tableOptigemAccounts != null) {
                 unterkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
-                    .filter(r -> r.get("Hauptkonto") != null && r.get("Unterkonto") != null
-                        && r.get("Hauptkonto").equals(String.valueOf(e.getValue().getId())))
-                    .map(r -> new IdAndName(Integer.parseInt(r.get("Unterkonto")), r.get("Kontobezeichnung")))
+                    .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnUk) != null
+                        && r.get(accountsColumnHk).equals(String.valueOf(e.getValue().getId())))
+                    .map(r -> new IdAndName(Integer.parseInt(r.get(accountsColumnUk)), r.get(accountsColumnBez)))
                     .toList()));
                 setCalculatedComboboxDropdownWidth(unterkontoComboBox);
             } else {
@@ -423,9 +434,9 @@ final class EditDialog extends Dialog {
             return null;
         }
         return tableOptigemAccounts.getRows().stream()
-            .filter(r -> r.get("Hauptkonto") != null && r.get("Hauptkonto").equals(String.valueOf(hk))
-                && r.get("Unterkonto") != null && r.get("Unterkonto").equals(String.valueOf(uk)))
-            .map(r -> r.get("Kontobezeichnung"))
+            .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnHk).equals(String.valueOf(hk))
+                && r.get(accountsColumnUk) != null && r.get(accountsColumnUk).equals(String.valueOf(uk)))
+            .map(r -> r.get(accountsColumnBez))
             .findFirst()
             .orElse("?");
     }

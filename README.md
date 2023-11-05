@@ -42,6 +42,11 @@ org:
           description: 28749283/6458292740
           table-accounts: girokonten
           table-projects: giroprojekte
+          accounts-column-hk: Hauptkonto
+          accounts-column-uk: Unterkonto
+          accounts-column-bez: Kontobezeichnung
+          projects-column-nr: Nr
+          projects-column-bez: Name
         DE89284750281023426171:
           name: Savings
 

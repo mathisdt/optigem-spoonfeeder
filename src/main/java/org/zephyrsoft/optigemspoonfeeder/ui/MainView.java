@@ -73,7 +73,12 @@ final class MainView extends VerticalLayout {
 	private String timestamp;
 	private SourceFile parsed;
 	private Table tableOptigemAccounts;
+	private String accountsColumnHk;
+	private String accountsColumnUk;
+	private String accountsColumnBez;
 	private Table tableOptigemProjects;
+	private String projectsColumnNr;
+	private String projectsColumnBez;
 	private String originalFilename;
 	private RulesResult result;
 
@@ -128,6 +133,20 @@ final class MainView extends VerticalLayout {
 				.addClickListener(e -> {
 					loadAndParseFromHibiscus(hibiscusImportService, month, account);
 					loadTables(account.getValue().getTableAccounts(), account.getValue().getTableProjects());
+
+					OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getBankAccount().get(account.getValue().getIban());
+					if (accountProperties == null) {
+						accountProperties = properties.getBankAccountByDescription(account.getValue().getBezeichnung());
+					}
+					if (accountProperties != null) {
+						accountsColumnHk = accountProperties.getAccountsColumnHk();
+						accountsColumnUk = accountProperties.getAccountsColumnUk();
+						accountsColumnBez = accountProperties.getAccountsColumnBez();
+
+						projectsColumnNr = accountProperties.getProjectsColumnNr();
+						projectsColumnBez = accountProperties.getProjectsColumnBez();
+					}
+
 					applyRulesToParsedData();
 					reapplyRules.setEnabled(true);
 				});
@@ -159,6 +178,13 @@ final class MainView extends VerticalLayout {
 				if (accountProperties != null) {
 					log.debug("load tables for bank account {}", accountProperties);
 					loadTables(accountProperties.getTableAccounts(), accountProperties.getTableProjects());
+
+					accountsColumnHk = accountProperties.getAccountsColumnHk();
+					accountsColumnUk = accountProperties.getAccountsColumnUk();
+					accountsColumnBez = accountProperties.getAccountsColumnBez();
+
+					projectsColumnNr = accountProperties.getProjectsColumnNr();
+					projectsColumnBez = accountProperties.getProjectsColumnBez();
 				}
 			}
 			reapplyRules.setEnabled(true);
@@ -358,7 +384,8 @@ final class MainView extends VerticalLayout {
 				.addComponentColumn(rr -> {
 					Button button = new Button(new Icon(VaadinIcon.EDIT));
 					button.addClickListener(e -> {
-						EditDialog editDialog = new EditDialog(tableOptigemAccounts, tableOptigemProjects, rr,
+						EditDialog editDialog = new EditDialog(tableOptigemAccounts, accountsColumnHk, accountsColumnUk, accountsColumnBez,
+							tableOptigemProjects, projectsColumnNr, projectsColumnBez, rr,
 							() -> {
 								grid.getDataProvider().refreshItem(rr);
 								updateFooter();
@@ -445,9 +472,9 @@ final class MainView extends VerticalLayout {
 			return null;
 		}
 		return tableOptigemAccounts.getRows().stream()
-			.filter(r -> r.get("Hauptkonto") != null && r.get("Hauptkonto").equals(String.valueOf(hk))
-				&& r.get("Unterkonto") != null && r.get("Unterkonto").equals(String.valueOf(uk)))
-			.map(r -> r.get("Kontobezeichnung"))
+			.filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnHk).equals(String.valueOf(hk))
+				&& r.get(accountsColumnUk) != null && r.get(accountsColumnUk).equals(String.valueOf(uk)))
+			.map(r -> r.get(accountsColumnBez))
 			.findFirst()
 			.orElse("?");
 	}
@@ -457,8 +484,8 @@ final class MainView extends VerticalLayout {
 			return null;
 		}
 		return tableOptigemProjects.getRows().stream()
-			.filter(r -> r.get("Nr") != null && r.get("Nr").equals(String.valueOf(nr)))
-			.map(r -> r.get("Name"))
+			.filter(r -> r.get(projectsColumnNr) != null && r.get(projectsColumnNr).equals(String.valueOf(nr)))
+			.map(r -> r.get(projectsColumnBez))
 			.findFirst()
 			.orElse(null);
 	}
