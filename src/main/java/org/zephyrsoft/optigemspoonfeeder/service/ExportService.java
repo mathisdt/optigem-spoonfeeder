@@ -31,7 +31,8 @@ public class ExportService {
 	public InputStream createBuchungenExport(List<RuleResult> complete) {
 		List<BuchungForExport> buchungen = complete.stream()
 				.filter(RuleResult::hasBuchung)
-				.map(rr -> new BuchungForExport(rr.getResult(), properties))
+				.flatMap(rr -> rr.getResult().stream())
+				.map(b -> new BuchungForExport(b, properties))
 				.toList();
 
 		final LocalDate today = LocalDate.now();

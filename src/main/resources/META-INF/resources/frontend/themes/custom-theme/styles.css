@@ -36,3 +36,7 @@ vaadin-grid::part(yellow) {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+.absolute-height {
+    height: 42px;
+}

@@ -23,8 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class RuleService {
-	private class LogWrapper {
-		private StringBuilder memory = new StringBuilder();
+	private static class LogWrapper {
+		private final StringBuilder memory = new StringBuilder();
 
 		@SuppressWarnings("unused") // used in Groovy script
 		public void log(String msg, Object[] args) {
@@ -52,7 +52,7 @@ public class RuleService {
 				+ "def log(String msg, Object... args) {\n"
 				+ "  logWrapper.log(msg, args)\n"
 				+ "}\n"
-				+ "def buchung(Object hauptkonto, Object unterkonto = null, Object projekt = null, Object buchungstext = null) {\n"
+				+ "static def buchung(Object hauptkonto, Object unterkonto = null, Object projekt = null, Object buchungstext = null) {\n"
 				+ "  return new Buchung(hauptkonto, unterkonto, projekt, buchungstext)\n"
 				+ "}\n"
 				+ rules);

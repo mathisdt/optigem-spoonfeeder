@@ -40,9 +40,9 @@ class RuleServiceIT {
 			assertThat(rulesResult)
 					.areExactly(1, matches(4940, 0, 0, "Telekom"));
 			assertThat(rulesResult)
-					.areExactly(1, matches(8010, 2, 0, "Vorname Test 2 Nachname Test 2 - Spende"));
+					.areExactly(1, matches(8010, 2, 0, "Vorname Test 2 Nachname Test 2"));
 			assertThat(rulesResult)
-					.areExactly(1, matches(8010, 1, 1, "Vorname Test 1 Nachname Test 1 - Troppa"));
+					.areExactly(1, matches(8010, 1, 1, "Vorname Test 1 Nachname Test 1"));
 			assertThat(rulesResult)
 					.areExactly(1, matches(8205, 4, 21, "GFYC-Freizeit"));
 			assertThat(rulesResult)
@@ -54,16 +54,17 @@ class RuleServiceIT {
 
 			// unmatched:
 			assertThat(rulesResult)
-					.areExactly(1, new Condition<>(rr -> rr.getResult() == null
+					.areExactly(1, new Condition<>(rr -> rr.getResult().isEmpty()
 							&& rr.getInput().getVerwendungszweck().contains("Einzahlung Bar"), ""));
 		}
 	}
 
 	private static Condition<RuleResult> matches(int hk, int uk, int p, String text) {
 		return new Condition<>(rr -> rr.getResult() != null
-				&& rr.getResult().getHauptkonto() == hk
-				&& rr.getResult().getUnterkonto() == uk
-				&& rr.getResult().getProjekt() == p
-				&& Objects.equals(rr.getResult().getBuchungstext(), text), "");
+				&& rr.getResult().size() == 1
+				&& rr.getResult().get(0).getHauptkonto() == hk
+				&& rr.getResult().get(0).getUnterkonto() == uk
+				&& rr.getResult().get(0).getProjekt() == p
+				&& Objects.equals(rr.getResult().get(0).getBuchungstext(), text), "");
 	}
 }

@@ -1,6 +1,8 @@
 package org.zephyrsoft.optigemspoonfeeder.ui;
 
+import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,6 +17,8 @@ import org.zephyrsoft.optigemspoonfeeder.model.IdAndName;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
 
+import com.vaadin.flow.component.AbstractField;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.Shortcuts;
 import com.vaadin.flow.component.UI;
@@ -56,8 +60,16 @@ final class EditDialog extends Dialog {
     private final Table tableOptigemProjects;
     private final String projectsColumnNr;
     private final String projectsColumnBez;
+    private final RuleResult rr;
     private final Holder<Boolean> automaticFocusChangeAllowed = new Holder<>(true);
     private final Holder<Boolean> openHauptkontoComboBox = new Holder<>(true);
+    private final Binder<RuleResult> binder;
+    private final HorizontalLayout betragLayout;
+    private final HorizontalLayout hauptkontoLayout;
+    private final HorizontalLayout unterkontoLayout;
+    private final HorizontalLayout projektLayout;
+    private final HorizontalLayout buchungstextLayout;
+    private final Button saveButton;
     private Runnable hauptkontoValueChangeTask;
 
     @SuppressWarnings("unchecked")
@@ -70,6 +82,7 @@ final class EditDialog extends Dialog {
         this.tableOptigemProjects = tableOptigemProjects;
         this.projectsColumnNr = projectsColumnNr;
         this.projectsColumnBez = projectsColumnBez;
+        this.rr = rr;
 
         setWidth("65%");
         setResizable(true);
@@ -91,6 +104,31 @@ final class EditDialog extends Dialog {
         Span betrag = new Span(CURRENCY_FORMAT.format(rr.getInput().getBetragMitVorzeichen()) + " €");
         betrag.addClassName(rr.getInput().isCredit() ? "green" : "red");
         Span buchungstext = new Span(rr.getInput().getBuchungstext());
+
+        TextField betragField = new TextField();
+        betragField.setId("betragField");
+        betragField.setWidthFull();
+
+        betragLayout = new HorizontalLayout();
+        betragLayout.setSizeFull();
+        betragLayout.setPadding(false);
+        betragLayout.setMargin(false);
+        hauptkontoLayout = new HorizontalLayout();
+        hauptkontoLayout.setSizeFull();
+        hauptkontoLayout.setPadding(false);
+        hauptkontoLayout.setMargin(false);
+        unterkontoLayout = new HorizontalLayout();
+        unterkontoLayout.setSizeFull();
+        unterkontoLayout.setPadding(false);
+        unterkontoLayout.setMargin(false);
+        projektLayout = new HorizontalLayout();
+        projektLayout.setSizeFull();
+        projektLayout.setPadding(false);
+        projektLayout.setMargin(false);
+        buchungstextLayout = new HorizontalLayout();
+        buchungstextLayout.setSizeFull();
+        buchungstextLayout.setPadding(false);
+        buchungstextLayout.setMargin(false);
 
         ComboBox<IdAndName> hauptkontoComboBox = new ComboBox<>();
         hauptkontoComboBox.setId("hauptkontoComboBox");
@@ -147,12 +185,13 @@ final class EditDialog extends Dialog {
             setCalculatedComboboxDropdownWidth(projektComboBox);
         }
 
-        Binder<RuleResult> binder = new Binder<>(RuleResult.class);
+        binder = new Binder<>(RuleResult.class);
 
-        binder.forField(hauptkontoComboBox).bind(this::getHauptkonto, EditDialog::setHauptkonto);
-        binder.forField(unterkontoComboBox).bind(this::getUnterkonto, EditDialog::setUnterkonto);
-        binder.forField(projektComboBox).bind(this::getProjekt, EditDialog::setProjekt);
-        binder.forField(buchungstextField).bind(EditDialog::getBuchungstext, EditDialog::setBuchungstext);
+        binder.forField(betragField).bind(r -> getBetrag(r, 0), (r, b) -> setBetrag(r, 0, b));
+        binder.forField(hauptkontoComboBox).bind(r -> getHauptkonto(r, 0), (r, hk) -> setHauptkonto(r, 0, hk));
+        binder.forField(unterkontoComboBox).bind(r -> getUnterkonto(r, 0), (r, uk) -> setUnterkonto(r, 0, uk));
+        binder.forField(projektComboBox).bind(r -> getProjekt(r, 0), (r, p) -> setProjekt(r, 0, p));
+        binder.forField(buchungstextField).bind(r -> getBuchungstext(r, 0), (r, bt) -> setBuchungstext(r, 0, bt));
 
         FormLayout formLayout = new FormLayout();
         formLayout.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
@@ -163,15 +202,21 @@ final class EditDialog extends Dialog {
         formLayout.addFormItem(kontonummer, "Kontonummer");
         formLayout.addFormItem(name, "Name");
         formLayout.addFormItem(verwendungszweck, "Verwendungszweck");
-        formLayout.addFormItem(betrag, "Betrag");
+        formLayout.addFormItem(betrag, "Betrag (Konto)");
         formLayout.addFormItem(buchungstext, "Buchungstext");
 
-        formLayout.addFormItem(hauptkontoComboBox, "Hauptkonto");
-        formLayout.addFormItem(unterkontoComboBox, "Unterkonto");
-        formLayout.addFormItem(projektComboBox, "Projekt");
-        formLayout.addFormItem(buchungstextField, "Buchungstext");
+        betragLayout.add(betragField);
+        formLayout.addFormItem(betragLayout, "Betrag (Optigem)");
+        hauptkontoLayout.add(hauptkontoComboBox);
+        formLayout.addFormItem(hauptkontoLayout, "Hauptkonto");
+        unterkontoLayout.add(unterkontoComboBox);
+        formLayout.addFormItem(unterkontoLayout, "Unterkonto");
+        projektLayout.add(projektComboBox);
+        formLayout.addFormItem(projektLayout, "Projekt");
+        buchungstextLayout.add(buchungstextField);
+        formLayout.addFormItem(buchungstextLayout, "Buchungstext");
 
-        Button saveButton = new Button("Speichern & Schließen", e -> {
+        saveButton = new Button("Speichern & Schließen", e -> {
             try {
                 binder.writeBean(rr);
                 rr.fillGeneralData();
@@ -182,13 +227,42 @@ final class EditDialog extends Dialog {
             }
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        Button addBuchung = new Button("Buchung hinzufügen", event -> {
+            rr.getResult().add(new Buchung(null, null, null, null));
+            int index = rr.getResult().size() - 1;
+
+            // TODO also do this when opening a posting which was previously split (so everything is displayed) !!
+            addFieldsForIndex(index);
+        });
+        addBuchung.setTooltipText("weitere Buchung anfügen");
+        Button removeBuchung = new Button("Buchung löschen", e -> {
+            if (rr.getResult().size() > 1) {
+                AbstractField<?, ?> lastBetrag = lastChildField(betragLayout);
+                binder.removeBinding(lastBetrag);
+                betragLayout.remove(lastBetrag);
+                AbstractField<?, ?> lastHauptkonto = lastChildField(hauptkontoLayout);
+                binder.removeBinding(lastHauptkonto);
+                hauptkontoLayout.remove(lastHauptkonto);
+                AbstractField<?, ?> lastUnterkonto = lastChildField(unterkontoLayout);
+                binder.removeBinding(lastUnterkonto);
+                unterkontoLayout.remove(lastUnterkonto);
+                AbstractField<?, ?> lastProjekt = lastChildField(projektLayout);
+                binder.removeBinding(lastProjekt);
+                projektLayout.remove(lastProjekt);
+                AbstractField<?, ?> lastBuchungstext = lastChildField(buchungstextLayout);
+                binder.removeBinding(lastBuchungstext);
+                buchungstextLayout.remove(lastBuchungstext);
+                rr.getResult().remove(rr.getResult().size() - 1);
+            }
+        });
+        removeBuchung.setTooltipText("letzte Buchung entfernen");
         Button deleteButton = new Button("Löschen & Schließen", e -> {
-            rr.setResult(null);
+            rr.clearBuchungen();
             updateTableRow.run();
             close();
         });
         deleteButton.setTabIndex(-1);
-        HorizontalLayout buttons = new HorizontalLayout(FlexComponent.JustifyContentMode.BETWEEN, saveButton, deleteButton);
+        HorizontalLayout buttons = new HorizontalLayout(FlexComponent.JustifyContentMode.BETWEEN, saveButton, addBuchung, removeBuchung, deleteButton);
         add(buttons);
 
         final Holder<Boolean> initializing = new Holder<>(true);
@@ -257,7 +331,17 @@ final class EditDialog extends Dialog {
             }
         });
 
+        for (int index = 1; index < rr.getResult().size(); index++) {
+            addFieldsForIndex(index);
+        }
+
         binder.readBean(rr);
+
+        // AFTER reading the bean:
+        if (!rr.hasBuchung()) {
+            rr.getResult().add(new Buchung(null, null, null, null));
+            betragField.setValue(CURRENCY_FORMAT.format(rr.getInput().getBetrag()));
+        }
 
         if (buchungstextField.isEmpty()) {
             buchungstextField.setValue(StringUtils.isNotBlank(rr.getInput().getVerwendungszweckClean())
@@ -267,6 +351,8 @@ final class EditDialog extends Dialog {
 
         initializing.setValue(false);
 
+        Shortcuts.addShortcutListener(betragField, hauptkontoComboBox::focus, Key.ENTER)
+            .listenOn(betragField);
         Shortcuts.addShortcutListener(hauptkontoComboBox, () -> {
                 hauptkontoValueChangeTask = () -> {
                     boolean automaticFocusChangeWasAllowed = automaticFocusChangeAllowed.getValue();
@@ -299,6 +385,155 @@ final class EditDialog extends Dialog {
 
         openHauptkontoComboBox.setValue(false);
         hauptkontoComboBox.focus();
+    }
+    private void addFieldsForIndex(final int index) {
+        TextField extraBetragField = new TextField();
+        extraBetragField.setId("betragField" + index);
+        extraBetragField.setWidthFull();
+        betragLayout.add(extraBetragField);
+        binder.forField(extraBetragField).bind(r -> getBetrag(r, index), (r, b) -> setBetrag(r, index, b));
+
+        ComboBox<IdAndName> extraHauptkontoComboBox = new ComboBox<>();
+        extraHauptkontoComboBox.setId("hauptkontoComboBox" + index);
+        extraHauptkontoComboBox.setAutoOpen(true);
+        extraHauptkontoComboBox.setWidthFull();
+        extraHauptkontoComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
+        hauptkontoLayout.add(extraHauptkontoComboBox);
+        binder.forField(extraHauptkontoComboBox).bind(r -> getHauptkonto(r, index), (r, hk) -> setHauptkonto(r, index, hk));
+
+        ComboBox<IdAndName> extraUnterkontoComboBox = new ComboBox<>();
+        extraUnterkontoComboBox.setId("unterkontoComboBox" + index);
+        extraUnterkontoComboBox.setAutoOpen(true);
+        extraUnterkontoComboBox.setWidthFull();
+        extraUnterkontoComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
+        unterkontoLayout.add(extraUnterkontoComboBox);
+        binder.forField(extraUnterkontoComboBox).bind(r -> getUnterkonto(r, index), (r, uk) -> setUnterkonto(r, index, uk));
+
+        ComboBox<IdAndName> extraProjektComboBox = new ComboBox<>();
+        extraProjektComboBox.setId("projektComboBox" + index);
+        extraProjektComboBox.setAutoOpen(true);
+        extraProjektComboBox.setWidthFull();
+        extraProjektComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
+        projektLayout.add(extraProjektComboBox);
+        binder.forField(extraProjektComboBox).bind(r -> getProjekt(r, index), (r, p) -> setProjekt(r, index, p));
+
+        TextField extraBuchungstextField = new TextField();
+        extraBuchungstextField.setId("buchungstextField" + index);
+        extraBuchungstextField.setWidthFull();
+        buchungstextLayout.add(extraBuchungstextField);
+        binder.forField(extraBuchungstextField).bind(r -> getBuchungstext(r, index), (r, bt) -> setBuchungstext(r, index, bt));
+        extraBuchungstextField.setValue(rr.getInput().getVerwendungszweckClean());
+
+        if (tableOptigemAccounts != null) {
+            extraHauptkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
+                .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnUk) != null
+                    && r.get(accountsColumnUk).equals("0"))
+                .map(r -> new IdAndName(Integer.parseInt(r.get(accountsColumnHk)), r.get(accountsColumnBez)))
+                .toList()));
+            setCalculatedComboboxDropdownWidth(extraHauptkontoComboBox);
+        }
+
+        if (tableOptigemProjects != null) {
+            extraProjektComboBox.setItems(new ListDataProvider<>(tableOptigemProjects.getRows().stream()
+                .filter(r -> r.get(projectsColumnNr) != null && r.get(projectsColumnBez) != null)
+                .map(r -> new IdAndName(Integer.parseInt(r.get(projectsColumnNr)), r.get(projectsColumnBez)))
+                .toList()));
+            setCalculatedComboboxDropdownWidth(extraProjektComboBox);
+        }
+
+        extraHauptkontoComboBox.addValueChangeListener(e -> {
+            if (e.getValue() != null && tableOptigemAccounts != null) {
+                extraUnterkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
+                    .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnUk) != null
+                        && r.get(accountsColumnHk).equals(String.valueOf(e.getValue().getId())))
+                    .map(r -> new IdAndName(Integer.parseInt(r.get(accountsColumnUk)), r.get(accountsColumnBez)))
+                    .toList()));
+                setCalculatedComboboxDropdownWidth(extraUnterkontoComboBox);
+            } else {
+                extraUnterkontoComboBox.setItems(Collections.emptyList());
+            }
+
+            List<IdAndName> unterkonten = new ArrayList<>(((ListDataProvider<IdAndName>) extraUnterkontoComboBox.getDataProvider()).getItems());
+            if (unterkonten.size() == 1) {
+                extraUnterkontoComboBox.setValue(unterkonten.get(0));
+            } else if (unterkonten.size() > 1) {
+                automaticFocusChangeAllowed.setValue(false);
+                extraUnterkontoComboBox.setValue(unterkonten.get(0));
+                automaticFocusChangeAllowed.setValue(true);
+            }
+            if (unterkonten.size() > 1) {
+                e.getSource().setOpened(false);
+                if (automaticFocusChangeAllowed.getValue()) {
+                    extraUnterkontoComboBox.focus();
+                }
+            }
+
+            if (hauptkontoValueChangeTask != null) {
+                hauptkontoValueChangeTask.run();
+                hauptkontoValueChangeTask = null;
+            }
+        });
+        extraUnterkontoComboBox.addValueChangeListener(e -> {
+            List<IdAndName> projekte = new ArrayList<>(((ListDataProvider<IdAndName>) extraProjektComboBox.getDataProvider()).getItems());
+            if (projekte.size() == 1) {
+                extraProjektComboBox.setValue(projekte.get(0));
+            }
+                if (extraProjektComboBox.isEmpty()) {
+                    extraProjektComboBox.setValue(projekte.get(0));
+                }
+                extraUnterkontoComboBox.setOpened(false);
+                if (automaticFocusChangeAllowed.getValue()) {
+                    extraProjektComboBox.focus();
+                }
+        });
+        extraProjektComboBox.addValueChangeListener(e -> {
+            if (!e.getHasValue().isEmpty()) {
+                extraProjektComboBox.setOpened(false);
+                if (automaticFocusChangeAllowed.getValue()) {
+                    extraBuchungstextField.focus();
+                }
+            }
+        });
+
+        Shortcuts.addShortcutListener(extraBetragField, extraHauptkontoComboBox::focus, Key.ENTER)
+            .listenOn(extraBetragField);
+        Shortcuts.addShortcutListener(extraHauptkontoComboBox, () -> {
+                hauptkontoValueChangeTask = () -> {
+                    boolean automaticFocusChangeWasAllowed = automaticFocusChangeAllowed.getValue();
+                    if (automaticFocusChangeWasAllowed) {
+                        automaticFocusChangeAllowed.setValue(false);
+                    }
+
+                    extraHauptkontoComboBox.setOpened(false);
+                    IdAndName selectedUnterkonto = extraUnterkontoComboBox.getValue();
+                    extraUnterkontoComboBox.setValue(((ListDataProvider<IdAndName>) extraUnterkontoComboBox.getDataProvider()).getItems().stream()
+                        .findFirst().orElse(null));
+                    extraUnterkontoComboBox.setValue(selectedUnterkonto);
+                    IdAndName selectedProjekt = extraProjektComboBox.getValue();
+                    extraProjektComboBox.setValue(((ListDataProvider<IdAndName>) extraProjektComboBox.getDataProvider()).getItems().stream()
+                        .findFirst().orElse(null));
+                    extraProjektComboBox.setValue(selectedProjekt);
+                    if (automaticFocusChangeWasAllowed) {
+                        automaticFocusChangeAllowed.setValue(true);
+                    }
+                };
+                applyFilter(extraHauptkontoComboBox);
+            }, Key.ENTER)
+            .listenOn(extraHauptkontoComboBox);
+        Shortcuts.addShortcutListener(extraUnterkontoComboBox, () -> applyFilter(extraUnterkontoComboBox), Key.ENTER)
+            .listenOn(extraUnterkontoComboBox);
+        Shortcuts.addShortcutListener(extraProjektComboBox, () -> applyFilter(extraProjektComboBox), Key.ENTER)
+            .listenOn(extraProjektComboBox);
+        Shortcuts.addShortcutListener(extraBuchungstextField, saveButton::focus, Key.ENTER)
+            .listenOn(extraBuchungstextField);
+    }
+
+    private static AbstractField<?, ?> lastChildField(Component container) {
+        List<? extends AbstractField<?, ?>> components = container.getChildren()
+            .filter(c -> c instanceof AbstractField)
+            .map(c -> (AbstractField<?, ?>) c)
+            .toList();
+        return components.isEmpty() ? null : components.get(components.size() - 1);
     }
 
     private static boolean tooLong(String str) {
@@ -370,63 +605,85 @@ final class EditDialog extends Dialog {
         }
     }
 
-    private IdAndName getHauptkonto(RuleResult rr) {
-        if (rr.getResult() == null) {
+    private static String getBetrag(RuleResult rr, int index) {
+        if (rr.getResult().size() <= index) {
             return null;
         }
-        String name = getKontoName(rr.getResult().getHauptkonto(), 0);
-        return new IdAndName(rr.getResult().getHauptkonto(), name);
+        return rr.getResult().get(index).getBetrag() == null
+            ? null
+            : CURRENCY_FORMAT.format(rr.getResult().get(index).getBetrag());
+
     }
 
-    private static void setHauptkonto(RuleResult rr, IdAndName hk) {
-        if (rr.getResult() == null) {
-            rr.setResult(new Buchung(hk.getId(), null, null, null));
+    private static void setBetrag(RuleResult rr, int index, String betrag) {
+        while (rr.getResult().size() <= index) {
+            rr.getResult().add(new Buchung(null, null, null, null));
         }
-        rr.getResult().setHauptkonto(hk.getId());
+        try {
+            Number parsed = CURRENCY_FORMAT.parse(betrag);
+            rr.getResult().get(index).setBetrag(new BigDecimal(parsed.toString()));
+        } catch (ParseException e) {
+            log.warn("could not parse number: {}", betrag);
+        }
     }
 
-    private IdAndName getUnterkonto(RuleResult rr) {
-        if (rr.getResult() == null) {
+    private IdAndName getHauptkonto(RuleResult rr, int index) {
+        if (rr.getResult().size() <= index) {
             return null;
         }
-        String name = getKontoName(rr.getResult().getHauptkonto(), rr.getResult().getUnterkonto());
-        return new IdAndName(rr.getResult().getUnterkonto(), name);
+        String name = getKontoName(rr.getResult().get(index).getHauptkonto(), 0);
+        return new IdAndName(rr.getResult().get(index).getHauptkonto(), name);
     }
 
-    private static void setUnterkonto(RuleResult rr, IdAndName uk) {
-        if (rr.getResult() == null) {
-            rr.setResult(new Buchung(null, uk.getId(), null, null));
+    private static void setHauptkonto(RuleResult rr, int index, IdAndName hk) {
+        while (rr.getResult().size() <= index) {
+            rr.getResult().add(new Buchung(hk.getId(), null, null, null));
         }
-        rr.getResult().setUnterkonto(uk == null ? 0 : uk.getId());
+        rr.getResult().get(index).setHauptkonto(hk.getId());
     }
 
-    private IdAndName getProjekt(RuleResult rr) {
-        if (rr.getResult() == null) {
+    private IdAndName getUnterkonto(RuleResult rr, int index) {
+        if (rr.getResult().size() <= index) {
             return null;
         }
-        String name = getProjektName(rr.getResult().getProjekt());
-        return new IdAndName(rr.getResult().getProjekt(), name);
+        String name = getKontoName(rr.getResult().get(index).getHauptkonto(), rr.getResult().get(index).getUnterkonto());
+        return new IdAndName(rr.getResult().get(index).getUnterkonto(), name);
     }
 
-    private static void setProjekt(RuleResult rr, IdAndName proj) {
-        if (rr.getResult() == null) {
-            rr.setResult(new Buchung(null, null, proj.getId(), null));
+    private static void setUnterkonto(RuleResult rr, int index, IdAndName uk) {
+        while (rr.getResult().size() <= index) {
+            rr.getResult().add(new Buchung(null, uk.getId(), null, null));
         }
-        rr.getResult().setProjekt(proj == null ? 0 : proj.getId());
+        rr.getResult().get(index).setUnterkonto(uk == null ? 0 : uk.getId());
     }
 
-    private static String getBuchungstext(RuleResult rr) {
-        if (rr.getResult() == null) {
+    private IdAndName getProjekt(RuleResult rr, int index) {
+        if (rr.getResult().size() <= index) {
             return null;
         }
-        return rr.getResult().getBuchungstext();
+        String name = getProjektName(rr.getResult().get(index).getProjekt());
+        return new IdAndName(rr.getResult().get(index).getProjekt(), name);
     }
 
-    private static void setBuchungstext(RuleResult rr, String buchungstext) {
-        if (rr.getResult() == null) {
-            rr.setResult(new Buchung(null, null, null, buchungstext));
+    private static void setProjekt(RuleResult rr, int index, IdAndName proj) {
+        while (rr.getResult().size() <= index) {
+            rr.getResult().add(new Buchung(null, null, proj.getId(), null));
         }
-        rr.getResult().setBuchungstext(buchungstext);
+        rr.getResult().get(index).setProjekt(proj == null ? 0 : proj.getId());
+    }
+
+    private static String getBuchungstext(RuleResult rr, int index) {
+        if (rr.getResult().size() <= index) {
+            return null;
+        }
+        return rr.getResult().get(index).getBuchungstext();
+    }
+
+    private static void setBuchungstext(RuleResult rr, int index, String buchungstext) {
+        while (rr.getResult().size() <= index) {
+            rr.getResult().add(new Buchung(null, null, null, buchungstext));
+        }
+        rr.getResult().get(index).setBuchungstext(buchungstext);
     }
 
     private String getKontoName(int hk, int uk) {
