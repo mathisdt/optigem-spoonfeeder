@@ -2,6 +2,7 @@ package org.zephyrsoft.optigemspoonfeeder.model;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -25,7 +26,22 @@ public class TableRow {
 		columnValues.put(columnName.toLowerCase(), columnValue);
 	}
 
+	public Set<String> keys() {
+		return columnValues.keySet();
+	}
+
 	public int size() {
 		return columnValues.size();
+	}
+
+	public TableRow with(String columnName, String columnValue) {
+		put(columnName, columnValue);
+		return this;
+	}
+
+	public TableRow copy() {
+		TableRow newRow = new TableRow();
+		newRow.columnValues.putAll(columnValues);
+		return newRow;
 	}
 }

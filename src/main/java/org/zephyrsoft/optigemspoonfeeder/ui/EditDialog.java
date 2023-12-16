@@ -6,8 +6,10 @@ import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -16,6 +18,8 @@ import org.zephyrsoft.optigemspoonfeeder.model.Holder;
 import org.zephyrsoft.optigemspoonfeeder.model.IdAndName;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
+import org.zephyrsoft.optigemspoonfeeder.model.TableRow;
+import org.zephyrsoft.optigemspoonfeeder.service.PersistenceService;
 
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.Component;
@@ -74,7 +78,10 @@ final class EditDialog extends Dialog {
 
     @SuppressWarnings("unchecked")
     public EditDialog(Table tableOptigemAccounts, String accountsColumnHk, String accountsColumnUk, String accountsColumnBez,
-        Table tableOptigemProjects, String projectsColumnNr, String projectsColumnBez, RuleResult rr, Runnable updateTableRow) {
+        Table tableOptigemProjects, String projectsColumnNr, String projectsColumnBez,
+        String tablePersons, String personsColumnNr, String personsColumnIban, String personsColumnVorname, String personsColumnNachname,
+        String accountsHkForPersons,
+        RuleResult rr, Runnable updateTableRow, PersistenceService persistenceService) {
         this.tableOptigemAccounts = tableOptigemAccounts;
         this.accountsColumnHk = accountsColumnHk;
         this.accountsColumnUk = accountsColumnUk;
@@ -227,11 +234,140 @@ final class EditDialog extends Dialog {
             }
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        Button addAccountToPerson = new Button("Konto \uD83E\uDC52 Person", event -> {
+            if (tablePersons == null) {
+                MessageDialog.show("Fehler", "keine Personen-Tabelle konfiguriert");
+                return;
+            }
+
+            if (tableOptigemAccounts == null) {
+                MessageDialog.show("Fehler", "keine Konto-Tabelle konfiguriert");
+                return;
+            }
+
+            if (hauptkontoComboBox.getValue() == null) {
+                MessageDialog.show("Fehler", "kein Hauptkonto ausgewählt");
+                return;
+            }
+
+            if (hauptkontoComboBox.getValue().getId() != Integer.parseInt(accountsHkForPersons)) {
+                MessageDialog.show("Fehler", "nicht das personenbezogene Hauptkonto ausgewählt");
+                return;
+            }
+
+            if (unterkontoComboBox.getValue() == null) {
+                MessageDialog.show("Fehler", "kein Unterkonto ausgewählt");
+                return;
+            }
+
+            Table persons = persistenceService.getTable(tablePersons);
+            String iban = rr.getInput().getKontoNummer();
+            if (persons.contains(personsColumnIban, iban)) {
+                TableRow person = persons.where(personsColumnIban, iban);
+                MessageDialog.show("Hinweis", "Kontonummer bereits vorhanden bei " + person.get(personsColumnVorname)
+                    + " " + person.get(personsColumnNachname) + " mit Nr. " + person.get(personsColumnNr));
+                return;
+            }
+
+            TableRow personForUk = persons.where(personsColumnNr, String.valueOf(unterkontoComboBox.getValue().getId()));
+
+            if (unterkontoComboBox.getValue() == null) {
+                MessageDialog.show("Fehler", "keine Person zum Unterkonto " + unterkontoComboBox.getValue().getId() + " gefunden");
+                return;
+            }
+
+            if (StringUtils.isBlank(personForUk.get(personsColumnIban))) {
+                personForUk.put(personsColumnIban, iban);
+            } else {
+                // we already have an account number, so add a new entry:
+                persons.add(new TableRow()
+                    .with(personsColumnNr, personForUk.get(personsColumnNr))
+                    .with(personsColumnIban, iban)
+                    .with(personsColumnVorname, personForUk.get(personsColumnVorname))
+                    .with(personsColumnNachname, personForUk.get(personsColumnNachname)));
+                persons.sortBy(personsColumnNachname, personsColumnVorname, personsColumnNr, personsColumnIban);
+            }
+
+            persistenceService.write(persons);
+
+            MessageDialog.show("Erfolg", "Kontonummer zu Person " + personForUk.get(personsColumnVorname) + " "
+                + personForUk.get(personsColumnNachname) + " (Nr. " + personForUk.get(personsColumnNr) + ") hinzugefügt");
+        });
+        addAccountToPerson.setTooltipText("IBAN der Person hinzufügen, die zum gewählten Unterkonto gehört");
+        Button addPerson = new Button("Person hinzufügen", event -> {
+            if (tablePersons == null) {
+                MessageDialog.show("Fehler", "keine Personen-Tabelle konfiguriert");
+                return;
+            }
+
+            if (tableOptigemAccounts == null) {
+                MessageDialog.show("Fehler", "keine Konto-Tabelle konfiguriert");
+                return;
+            }
+
+            Table persons = persistenceService.getTable(tablePersons);
+            String iban = rr.getInput().getKontoNummer();
+            if (persons.contains(personsColumnIban, iban)) {
+                TableRow person = persons.where(personsColumnIban, iban);
+                MessageDialog.show("Hinweis", "Person bereits vorhanden mit Nr. " + person.get(personsColumnNr) + ": "
+                    + person.get(personsColumnVorname) + " " + person.get(personsColumnNachname));
+                return;
+            }
+
+            int nextPersonNummer = persons.max(personsColumnNr) + 1;
+            String vorname;
+            String nachname;
+            if (rr.getInput().getName().contains(",")) {
+                String[] nameParts = rr.getInput().getName().split(",", 2);
+                nachname = nameParts[0].trim();
+                vorname = nameParts[1].trim();
+            } else if (rr.getInput().getName().contains(" ")) {
+                String[] nameParts = rr.getInput().getName().split(" ", 2);
+                vorname = nameParts[0].trim();
+                nachname = nameParts[1].trim();
+            } else {
+                vorname = "";
+                nachname = rr.getInput().getName().trim();
+            }
+
+            TableRow lastExistingPersonAccount = tableOptigemAccounts.getRows().stream()
+                .filter(r -> Objects.equals(r.get(accountsColumnHk), accountsHkForPersons))
+                .max(Comparator.comparing(tr -> tr.get(accountsColumnUk)))
+                .orElse(null);
+            if (lastExistingPersonAccount == null) {
+                MessageDialog.show("Fehler", "kein personenbezogenes Unterkonto zu HK " + accountsHkForPersons + " gefunden");
+                return;
+            }
+
+            int nextUnterkontoNummer = Integer.parseInt(lastExistingPersonAccount.get(accountsColumnUk)) + 1;
+            if (nextPersonNummer < nextUnterkontoNummer) {
+                nextPersonNummer = nextUnterkontoNummer;
+            } else if (nextPersonNummer > nextUnterkontoNummer) {
+                nextUnterkontoNummer = nextPersonNummer;
+            }
+            TableRow newPersonAccount = lastExistingPersonAccount.copy()
+                .with(accountsColumnUk, String.valueOf(nextUnterkontoNummer))
+                .with(accountsColumnBez, vorname + " " + nachname);
+            tableOptigemAccounts.add(newPersonAccount);
+            tableOptigemAccounts.sortBy(accountsColumnHk, accountsColumnUk);
+
+            persons.add(new TableRow()
+                .with(personsColumnNr, String.valueOf(nextPersonNummer))
+                .with(personsColumnIban, iban)
+                .with(personsColumnVorname, vorname)
+                .with(personsColumnNachname, nachname));
+            persons.sortBy(personsColumnNachname, personsColumnVorname);
+
+            persistenceService.write(tableOptigemAccounts);
+            persistenceService.write(persons);
+
+            MessageDialog.show("Erfolg", "Person und Unterkonto hinzugefügt: " + vorname + " " + nachname + "\n\nNummer: " + nextPersonNummer);
+        });
+        addPerson.setTooltipText("Person und IBAN in Tabelle hinzufügen");
         Button addBuchung = new Button("Buchung hinzufügen", event -> {
             rr.getResult().add(new Buchung(null, null, null, null));
             int index = rr.getResult().size() - 1;
 
-            // TODO also do this when opening a posting which was previously split (so everything is displayed) !!
             addFieldsForIndex(index);
         });
         addBuchung.setTooltipText("weitere Buchung anfügen");
@@ -262,7 +398,8 @@ final class EditDialog extends Dialog {
             close();
         });
         deleteButton.setTabIndex(-1);
-        HorizontalLayout buttons = new HorizontalLayout(FlexComponent.JustifyContentMode.BETWEEN, saveButton, addBuchung, removeBuchung, deleteButton);
+        HorizontalLayout buttons = new HorizontalLayout(FlexComponent.JustifyContentMode.BETWEEN,
+            saveButton, addAccountToPerson, addPerson, addBuchung, removeBuchung, deleteButton);
         add(buttons);
 
         final Holder<Boolean> initializing = new Holder<>(true);
@@ -478,13 +615,13 @@ final class EditDialog extends Dialog {
             if (projekte.size() == 1) {
                 extraProjektComboBox.setValue(projekte.get(0));
             }
-                if (extraProjektComboBox.isEmpty()) {
-                    extraProjektComboBox.setValue(projekte.get(0));
-                }
-                extraUnterkontoComboBox.setOpened(false);
-                if (automaticFocusChangeAllowed.getValue()) {
-                    extraProjektComboBox.focus();
-                }
+            if (extraProjektComboBox.isEmpty()) {
+                extraProjektComboBox.setValue(projekte.get(0));
+            }
+            extraUnterkontoComboBox.setOpened(false);
+            if (automaticFocusChangeAllowed.getValue()) {
+                extraProjektComboBox.focus();
+            }
         });
         extraProjektComboBox.addValueChangeListener(e -> {
             if (!e.getHasValue().isEmpty()) {
@@ -546,15 +683,33 @@ final class EditDialog extends Dialog {
         PendingJavaScriptResult scriptResult =
             UI.getCurrent().getPage().executeJs("return document.getElementById('" + currentId + "').getElementsByTagName('input')[0].value;");
         scriptResult.then(String.class, filter -> {
-                String idFilter = filter == null
-                    ? null
-                    : EVERYTHING_AFTER_SPACE.matcher(filter).replaceAll("");
-                ((ListDataProvider<IdAndName>) current.getDataProvider()).getItems().stream()
-                    .filter(e -> String.valueOf(e.getId()).equals(idFilter))
-                    .findAny()
-                    .ifPresentOrElse(e -> {
-                        // filter for ID
-                        log.debug("{} idFilter={} => element={}", currentId, idFilter, e);
+            String idFilter = filter == null
+                ? null
+                : EVERYTHING_AFTER_SPACE.matcher(filter).replaceAll("");
+            ((ListDataProvider<IdAndName>) current.getDataProvider()).getItems().stream()
+                .filter(e -> String.valueOf(e.getId()).equals(idFilter))
+                .findAny()
+                .ifPresentOrElse(e -> {
+                    // filter for ID
+                    log.debug("{} idFilter={} => element={}", currentId, idFilter, e);
+                    boolean automaticFocusChangeWasAllowed = automaticFocusChangeAllowed.getValue();
+                    if (automaticFocusChangeWasAllowed) {
+                        automaticFocusChangeAllowed.setValue(false);
+                    }
+                    current.setValue(null);
+                    if (automaticFocusChangeWasAllowed) {
+                        automaticFocusChangeAllowed.setValue(true);
+                    }
+                    current.setValue(e);
+                }, () -> {
+                    // filter for entry name
+                    String filterLowercase = filter == null ? null : filter.toLowerCase();
+                    List<IdAndName> filtered = ((ListDataProvider<IdAndName>) current.getDataProvider()).getItems().stream()
+                        .filter(e -> filterLowercase != null && e.getName().toLowerCase().contains(filterLowercase))
+                        .toList();
+                    if (filtered.size() == 1) {
+                        IdAndName found = filtered.get(0);
+                        log.debug("{} filter={} => element={}", currentId, filter, found);
                         boolean automaticFocusChangeWasAllowed = automaticFocusChangeAllowed.getValue();
                         if (automaticFocusChangeWasAllowed) {
                             automaticFocusChangeAllowed.setValue(false);
@@ -563,30 +718,12 @@ final class EditDialog extends Dialog {
                         if (automaticFocusChangeWasAllowed) {
                             automaticFocusChangeAllowed.setValue(true);
                         }
-                        current.setValue(e);
-                    }, () -> {
-                        // filter for entry name
-                        String filterLowercase = filter == null ? null : filter.toLowerCase();
-                        List<IdAndName> filtered = ((ListDataProvider<IdAndName>) current.getDataProvider()).getItems().stream()
-                            .filter(e -> filterLowercase != null && e.getName().toLowerCase().contains(filterLowercase))
-                            .toList();
-                        if (filtered.size() == 1) {
-                            IdAndName found = filtered.get(0);
-                            log.debug("{} filter={} => element={}", currentId, filter, found);
-                            boolean automaticFocusChangeWasAllowed = automaticFocusChangeAllowed.getValue();
-                            if (automaticFocusChangeWasAllowed) {
-                                automaticFocusChangeAllowed.setValue(false);
-                            }
-                            current.setValue(null);
-                            if (automaticFocusChangeWasAllowed) {
-                                automaticFocusChangeAllowed.setValue(true);
-                            }
-                            current.setValue(found);
-                        } else {
-                            log.debug("{} filter={} idFilter={} => no element found", currentId, filter, idFilter);
-                        }
-                    });
-            }, error -> log.debug("{} error while getting filter text: {}", currentId, error));
+                        current.setValue(found);
+                    } else {
+                        log.debug("{} filter={} idFilter={} => no element found", currentId, filter, idFilter);
+                    }
+                });
+        }, error -> log.debug("{} error while getting filter text: {}", currentId, error));
         try {
             scriptResult.toCompletableFuture().get();
         } catch (Exception ignored) {

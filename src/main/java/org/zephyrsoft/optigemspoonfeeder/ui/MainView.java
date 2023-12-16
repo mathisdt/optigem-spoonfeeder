@@ -80,6 +80,12 @@ final class MainView extends VerticalLayout {
     private Table tableOptigemProjects;
     private String projectsColumnNr;
     private String projectsColumnBez;
+    private String tablePersons;
+    private String personsColumnNr;
+    private String personsColumnIban;
+    private String personsColumnVorname;
+    private String personsColumnNachname;
+    private String accountsHkForPersons;
     private String originalFilename;
     private RulesResult result;
 
@@ -133,6 +139,7 @@ final class MainView extends VerticalLayout {
         loadFromHibiscusServerButton
             .addClickListener(e -> {
                 loadAndParseFromHibiscus(hibiscusImportService, month, account);
+                log.debug("load tables for bank account {}", account.getValue().getIban());
                 loadTables(account.getValue().getTableAccounts(), account.getValue().getTableProjects());
 
                 OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getBankAccount().get(account.getValue().getIban());
@@ -146,6 +153,14 @@ final class MainView extends VerticalLayout {
 
                     projectsColumnNr = accountProperties.getProjectsColumnNr();
                     projectsColumnBez = accountProperties.getProjectsColumnBez();
+
+                    tablePersons = accountProperties.getTablePersons();
+                    personsColumnNr = accountProperties.getPersonsColumnNr();
+                    personsColumnIban = accountProperties.getPersonsColumnIban();
+                    personsColumnVorname = accountProperties.getPersonsColumnVorname();
+                    personsColumnNachname = accountProperties.getPersonsColumnNachname();
+
+                    accountsHkForPersons = accountProperties.getAccountsHkForPersons();
                 }
 
                 applyRulesToParsedData();
@@ -186,6 +201,14 @@ final class MainView extends VerticalLayout {
 
                     projectsColumnNr = accountProperties.getProjectsColumnNr();
                     projectsColumnBez = accountProperties.getProjectsColumnBez();
+
+                    tablePersons = accountProperties.getTablePersons();
+                    personsColumnNr = accountProperties.getPersonsColumnNr();
+                    personsColumnIban = accountProperties.getPersonsColumnIban();
+                    personsColumnVorname = accountProperties.getPersonsColumnVorname();
+                    personsColumnNachname = accountProperties.getPersonsColumnNachname();
+
+                    accountsHkForPersons = accountProperties.getAccountsHkForPersons();
                 }
             }
             reapplyRules.setEnabled(true);
@@ -386,11 +409,12 @@ final class MainView extends VerticalLayout {
                 Button button = new Button(new Icon(VaadinIcon.EDIT));
                 button.addClickListener(e -> {
                     EditDialog editDialog = new EditDialog(tableOptigemAccounts, accountsColumnHk, accountsColumnUk, accountsColumnBez,
-                        tableOptigemProjects, projectsColumnNr, projectsColumnBez, rr,
-                        () -> {
+                        tableOptigemProjects, projectsColumnNr, projectsColumnBez,
+                        tablePersons, personsColumnNr, personsColumnIban, personsColumnVorname, personsColumnNachname,
+                        accountsHkForPersons, rr, () -> {
                             grid.getDataProvider().refreshItem(rr);
                             updateFooter();
-                        });
+                        }, persistenceService);
                     editDialog.open();
                 });
                 return button;

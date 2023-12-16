@@ -32,11 +32,17 @@ public class OptigemSpoonfeederProperties {
 		private String description;
 		private String tableAccounts;
 		private String tableProjects;
+		private String tablePersons;
 		private String accountsColumnHk = "Hauptkonto";
 		private String accountsColumnUk = "Unterkonto";
 		private String accountsColumnBez = "Kontobezeichnung";
 		private String projectsColumnNr = "Nr";
 		private String projectsColumnBez = "Name";
+		private String personsColumnNr = "Nr";
+		private String personsColumnIban = "IBAN";
+		private String personsColumnVorname = "Vorname";
+		private String personsColumnNachname = "Nachname";
+		private String accountsHkForPersons = "8010";
 	}
 
 	public AccountProperties getBankAccountByDescription(final String description) {
