@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.0</version>
+        <version>3.2.1</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>org.zephyrsoft</groupId>
@@ -16,8 +16,7 @@
     <description>Imports MT940 or Hibiscus data via REST and generates Optigem postings via rules or manually.</description>
     <properties>
         <java.version>21</java.version>
-        <spring-boot.version>3.2.0</spring-boot.version>
-        <logback.version>1.4.14</logback.version><!-- as long as Spring Boot defines the vulnerable version 1.4.11 -->
+        <spring-boot.version>3.2.1</spring-boot.version>
         <vaadin.version>24.3.1</vaadin.version>
         <commons-io.version>2.15.1</commons-io.version>
         <windmill.version>2.0.1</windmill.version>
