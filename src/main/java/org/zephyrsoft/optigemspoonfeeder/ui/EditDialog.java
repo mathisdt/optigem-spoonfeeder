@@ -361,6 +361,10 @@ final class EditDialog extends Dialog {
             persistenceService.write(tableOptigemAccounts);
             persistenceService.write(persons);
 
+            IdAndName selectedUnterkonto = unterkontoComboBox.getValue();
+            fillUnterkontoComboBox(unterkontoComboBox, hauptkontoComboBox);
+            unterkontoComboBox.setValue(selectedUnterkonto);
+
             MessageDialog.show("Erfolg", "Person und Unterkonto hinzugefügt: " + vorname + " " + nachname + "\n\nNummer: " + nextPersonNummer);
         });
         addPerson.setTooltipText("Person und IBAN in Tabelle hinzufügen");
@@ -405,15 +409,9 @@ final class EditDialog extends Dialog {
         final Holder<Boolean> initializing = new Holder<>(true);
 
         hauptkontoComboBox.addValueChangeListener(e -> {
-            if (e.getValue() != null && tableOptigemAccounts != null) {
-                unterkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
-                    .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnUk) != null
-                        && r.get(accountsColumnHk).equals(String.valueOf(e.getValue().getId())))
-                    .map(r -> new IdAndName(Integer.parseInt(r.get(accountsColumnUk)), r.get(accountsColumnBez)))
-                    .toList()));
+            if (e.getValue() != null) {
+                fillUnterkontoComboBox(unterkontoComboBox, hauptkontoComboBox);
                 setCalculatedComboboxDropdownWidth(unterkontoComboBox);
-            } else {
-                unterkontoComboBox.setItems(Collections.emptyList());
             }
 
             List<IdAndName> unterkonten = new ArrayList<>(((ListDataProvider<IdAndName>) unterkontoComboBox.getDataProvider()).getItems());
@@ -523,6 +521,18 @@ final class EditDialog extends Dialog {
         openHauptkontoComboBox.setValue(false);
         hauptkontoComboBox.focus();
     }
+    private void fillUnterkontoComboBox(final ComboBox<IdAndName> unterkontoComboBox, final ComboBox<IdAndName> hauptComboBox) {
+        if (tableOptigemAccounts != null && hauptComboBox.getValue() != null) {
+            unterkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
+                .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnUk) != null
+                    && r.get(accountsColumnHk).equals(String.valueOf(hauptComboBox.getValue().getId())))
+                .map(r -> new IdAndName(Integer.parseInt(r.get(accountsColumnUk)), r.get(accountsColumnBez)))
+                .toList()));
+        } else {
+            unterkontoComboBox.setItems(Collections.emptyList());
+        }
+    }
+
     private void addFieldsForIndex(final int index) {
         TextField extraBetragField = new TextField();
         extraBetragField.setId("betragField" + index);
@@ -579,15 +589,9 @@ final class EditDialog extends Dialog {
         }
 
         extraHauptkontoComboBox.addValueChangeListener(e -> {
-            if (e.getValue() != null && tableOptigemAccounts != null) {
-                extraUnterkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
-                    .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnUk) != null
-                        && r.get(accountsColumnHk).equals(String.valueOf(e.getValue().getId())))
-                    .map(r -> new IdAndName(Integer.parseInt(r.get(accountsColumnUk)), r.get(accountsColumnBez)))
-                    .toList()));
+            if (e.getValue() != null) {
+                fillUnterkontoComboBox(extraUnterkontoComboBox, extraHauptkontoComboBox);
                 setCalculatedComboboxDropdownWidth(extraUnterkontoComboBox);
-            } else {
-                extraUnterkontoComboBox.setItems(Collections.emptyList());
             }
 
             List<IdAndName> unterkonten = new ArrayList<>(((ListDataProvider<IdAndName>) extraUnterkontoComboBox.getDataProvider()).getItems());
