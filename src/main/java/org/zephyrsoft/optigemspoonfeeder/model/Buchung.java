@@ -44,4 +44,7 @@ public class Buchung {
 		return obj instanceof Integer i ? i : Integer.valueOf(str(obj));
 	}
 
+	public boolean isEmpty() {
+		return hauptkonto == 0 || betrag == null || incoming == null || datum == null;
+	}
 }

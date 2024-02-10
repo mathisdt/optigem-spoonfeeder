@@ -38,6 +38,7 @@ public class RuleResult {
 	public boolean hasBuchungenForWholeSum() {
 		return !result.isEmpty() && Objects.compare(input.getBetrag(),
 			result.stream()
+				.filter(b -> !b.isEmpty())
 				.map(Buchung::getBetrag)
 				.filter(b -> b != null && b.compareTo(BigDecimal.ZERO) > 0)
 				.reduce(BigDecimal.ZERO, BigDecimal::add),

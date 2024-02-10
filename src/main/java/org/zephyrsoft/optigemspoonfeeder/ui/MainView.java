@@ -350,8 +350,8 @@ final class MainView extends VerticalLayout {
     }
     private void updateFooter() {
         int allPostings = result == null ? 0 : result.size();
-        long mappedPostings = result == null ? 0 : result.stream().filter(RuleResult::hasBuchung).count();
-        logText.setText(allPostings + " Buchungen geladen, davon " + mappedPostings + " zugeordnet");
+        long mappedPostings = result == null ? 0 : result.stream().filter(RuleResult::hasBuchungenForWholeSum).count();
+        logText.setText(allPostings + " Buchungen geladen, mit " + (allPostings - mappedPostings) + " fehlenden Zuordnungen");
         if (downloadBuchungen != null) {
             downloadBuchungen.setEnabled(mappedPostings > 0);
         }

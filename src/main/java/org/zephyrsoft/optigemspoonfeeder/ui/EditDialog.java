@@ -474,7 +474,6 @@ final class EditDialog extends Dialog {
 
         // AFTER reading the bean:
         if (!rr.hasBuchung()) {
-            rr.getResult().add(new Buchung(null, null, null, null));
             betragField.setValue(CURRENCY_FORMAT.format(rr.getInput().getBetrag()));
         }
 
@@ -780,7 +779,7 @@ final class EditDialog extends Dialog {
         while (rr.getResult().size() <= index) {
             rr.getResult().add(new Buchung(hk.getId(), null, null, null));
         }
-        rr.getResult().get(index).setHauptkonto(hk.getId());
+        rr.getResult().get(index).setHauptkonto(hk == null ? 0 : hk.getId());
     }
 
     private IdAndName getUnterkonto(RuleResult rr, int index) {
@@ -824,7 +823,7 @@ final class EditDialog extends Dialog {
         while (rr.getResult().size() <= index) {
             rr.getResult().add(new Buchung(null, null, null, buchungstext));
         }
-        rr.getResult().get(index).setBuchungstext(buchungstext);
+        rr.getResult().get(index).setBuchungstext(buchungstext == null ? "" : buchungstext);
     }
 
     private String getKontoName(int hk, int uk) {
