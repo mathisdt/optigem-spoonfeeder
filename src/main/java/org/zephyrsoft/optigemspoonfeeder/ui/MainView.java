@@ -64,6 +64,8 @@ final class MainView extends VerticalLayout {
 
     private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
     private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
+
+    private static final DateTimeFormatter YEAR_MONTH_FORMAT = DateTimeFormatter.ofPattern("MMMM yyyy");
     private static final Pattern PATTERN = Pattern.compile("\\.[^\\.]+$");
 
     private final ParseService parseService;
@@ -86,18 +88,24 @@ final class MainView extends VerticalLayout {
     private String personsColumnVorname;
     private String personsColumnNachname;
     private String accountsHkForPersons;
+    private YearMonth loadedMonth;
     private String originalFilename;
     private RulesResult result;
 
     private final Div logArea;
     private final Grid<RuleResult> grid;
     private final Span logText;
+    private final ComboBox<YearMonth> monthToLoad;
+    private final Button load;
+    private final Button save;
 
     private final HorizontalLayout buttons;
 
     private HeaderRow headerRow;
     private Anchor downloadBuchungen;
     private Anchor downloadRestMt940;
+
+    private final OptigemSpoonfeederProperties properties;
 
     MainView(ParseService parseService, RuleService ruleService, ExportService exportService,
         HibiscusImportService hibiscusImportService, PersistenceService persistenceService,
@@ -106,6 +114,7 @@ final class MainView extends VerticalLayout {
         this.ruleService = ruleService;
         this.exportService = exportService;
         this.persistenceService = persistenceService;
+        this.properties = properties;
 
         setSizeFull();
 
@@ -119,9 +128,8 @@ final class MainView extends VerticalLayout {
         month.setWidthFull();
         YearMonth currentMonth = YearMonth.now();
         month.setItems(availableMonths());
-        final DateTimeFormatter yearMonthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy");
         month.setItemLabelGenerator(
-            ym -> yearMonthFormatter.format(ym) + (ym.equals(currentMonth) ? " (unvollständig)" : ""));
+            ym -> YEAR_MONTH_FORMAT.format(ym) + (ym.equals(currentMonth) ? " (unvollständig)" : ""));
         month.setValue(YearMonth.from(LocalDate.now().minusMonths(1)));
 
         ComboBox<Konto> account = new ComboBox<>();
@@ -146,22 +154,7 @@ final class MainView extends VerticalLayout {
                 if (accountProperties == null) {
                     accountProperties = properties.getBankAccountByDescription(account.getValue().getBezeichnung());
                 }
-                if (accountProperties != null) {
-                    accountsColumnHk = accountProperties.getAccountsColumnHk();
-                    accountsColumnUk = accountProperties.getAccountsColumnUk();
-                    accountsColumnBez = accountProperties.getAccountsColumnBez();
-
-                    projectsColumnNr = accountProperties.getProjectsColumnNr();
-                    projectsColumnBez = accountProperties.getProjectsColumnBez();
-
-                    tablePersons = accountProperties.getTablePersons();
-                    personsColumnNr = accountProperties.getPersonsColumnNr();
-                    personsColumnIban = accountProperties.getPersonsColumnIban();
-                    personsColumnVorname = accountProperties.getPersonsColumnVorname();
-                    personsColumnNachname = accountProperties.getPersonsColumnNachname();
-
-                    accountsHkForPersons = accountProperties.getAccountsHkForPersons();
-                }
+                interpretAccountProperties(accountProperties);
 
                 applyRulesToParsedData();
                 reapplyRules.setEnabled(true);
@@ -191,35 +184,31 @@ final class MainView extends VerticalLayout {
                 if (accountProperties == null) {
                     accountProperties = properties.getBankAccountByDescription(konto);
                 }
-                if (accountProperties != null) {
-                    log.debug("load tables for bank account {}", accountProperties);
-                    loadTables(accountProperties.getTableAccounts(), accountProperties.getTableProjects());
-
-                    accountsColumnHk = accountProperties.getAccountsColumnHk();
-                    accountsColumnUk = accountProperties.getAccountsColumnUk();
-                    accountsColumnBez = accountProperties.getAccountsColumnBez();
-
-                    projectsColumnNr = accountProperties.getProjectsColumnNr();
-                    projectsColumnBez = accountProperties.getProjectsColumnBez();
-
-                    tablePersons = accountProperties.getTablePersons();
-                    personsColumnNr = accountProperties.getPersonsColumnNr();
-                    personsColumnIban = accountProperties.getPersonsColumnIban();
-                    personsColumnVorname = accountProperties.getPersonsColumnVorname();
-                    personsColumnNachname = accountProperties.getPersonsColumnNachname();
-
-                    accountsHkForPersons = accountProperties.getAccountsHkForPersons();
-                }
+                interpretAccountProperties(accountProperties);
             }
             reapplyRules.setEnabled(true);
         });
+
+        load = new Button("Laden");
+
+        monthToLoad = new ComboBox<>();
+        monthToLoad.setItemLabelGenerator(YEAR_MONTH_FORMAT::format);
+        monthToLoad.setItems(persistenceService.getStoredMonths());
+        monthToLoad.addValueChangeListener(e -> load.setEnabled(monthToLoad.getValue() != null));
+
+        load.addClickListener(e -> loadStoredMonth(monthToLoad.getValue()));
+        load.setEnabled(false);
+
+        save = new Button("Speichern");
+        save.addClickListener(e -> saveStoredMonth());
+        save.setEnabled(false);
 
         logArea = new Div();
         logArea.setWidthFull();
         Scroller scroller = new Scroller(logArea);
         scroller.setSizeFull();
 
-        HorizontalLayout topLeft = new HorizontalLayout(upload, month, account, loadFromHibiscusServerButton, reapplyRules);
+        HorizontalLayout topLeft = new HorizontalLayout(upload, month, account, loadFromHibiscusServerButton, reapplyRules, save, monthToLoad, load);
         topLeft.setPadding(false);
         HorizontalLayout top = new HorizontalLayout(topLeft, scroller);
         top.setWidthFull();
@@ -249,13 +238,36 @@ final class MainView extends VerticalLayout {
                     + properties.getDir());
         }
     }
+    private void interpretAccountProperties(final OptigemSpoonfeederProperties.AccountProperties accountProperties) {
+        if (accountProperties != null) {
+            log.debug("load tables for bank account {}", accountProperties);
+            loadTables(accountProperties.getTableAccounts(), accountProperties.getTableProjects());
+
+            accountsColumnHk = accountProperties.getAccountsColumnHk();
+            accountsColumnUk = accountProperties.getAccountsColumnUk();
+            accountsColumnBez = accountProperties.getAccountsColumnBez();
+
+            projectsColumnNr = accountProperties.getProjectsColumnNr();
+            projectsColumnBez = accountProperties.getProjectsColumnBez();
+
+            tablePersons = accountProperties.getTablePersons();
+            personsColumnNr = accountProperties.getPersonsColumnNr();
+            personsColumnIban = accountProperties.getPersonsColumnIban();
+            personsColumnVorname = accountProperties.getPersonsColumnVorname();
+            personsColumnNachname = accountProperties.getPersonsColumnNachname();
+
+            accountsHkForPersons = accountProperties.getAccountsHkForPersons();
+        }
+    }
 
     private void loadAndParseFromHibiscus(HibiscusImportService hibiscusImportService, ComboBox<YearMonth> month,
         ComboBox<Konto> account) {
         try {
+            loadedMonth = null;
             originalFilename = account.getValue().getBezeichnungForFilename() + "_" + MONTH_FORMAT.format(month.getValue()) + ".hibiscus";
             timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
             parsed = hibiscusImportService.read(month.getValue(), account.getValue());
+            loadedMonth = month.getValue();
         } catch (Exception e) {
             logText.setText("Fehler: " + e.getMessage());
             log.warn("Fehler beim Laden von Hibiscus", e);
@@ -325,9 +337,11 @@ final class MainView extends VerticalLayout {
 
     private void parseUploadedFile(InputStream inputStream, String filename) {
         try {
+            loadedMonth = null;
             originalFilename = filename;
             timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
             parsed = parseService.parse(inputStream);
+            loadedMonth = YearMonth.from(parsed.getEntries().getFirst().getValutaDatum());
         } catch (Exception e) {
             logText.setText("Fehler: " + e.getMessage());
             log.warn("Fehler beim Parsen", e);
@@ -339,6 +353,7 @@ final class MainView extends VerticalLayout {
             result = ruleService.apply(parsed);
             logArea.setText(result.getLogMessages());
             updateFooter();
+            save.setEnabled(true);
 
             grid.removeAllColumns();
             grid.setItems(new ListDataProvider<>(result.getResults()));
@@ -348,6 +363,43 @@ final class MainView extends VerticalLayout {
             log.warn("Fehler bei der Regelanwendung", e);
         }
     }
+
+    private void loadStoredMonth(YearMonth yearMonth) {
+        try {
+            result = persistenceService.getStoredMonth(yearMonth);
+
+            if (!result.getResults().isEmpty()) {
+                String konto = result.getResults().get(0).getInput().getKontobezeichnung();
+                OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getBankAccount().get(konto);
+                if (accountProperties == null) {
+                    accountProperties = properties.getBankAccountByDescription(konto);
+                }
+                interpretAccountProperties(accountProperties);
+            }
+
+            logArea.setText("Monat " + YEAR_MONTH_FORMAT.format(yearMonth) +" geladen\n" + result.getLogMessages());
+            updateFooter();
+
+            grid.removeAllColumns();
+            grid.setItems(new ListDataProvider<>(result.getResults()));
+            configureColumns();
+            save.setEnabled(true);
+        } catch (Exception e) {
+            logText.setText("Fehler: " + e.getMessage());
+            log.warn("Fehler beim Laden", e);
+        }
+    }
+
+    private void saveStoredMonth() {
+        try {
+            persistenceService.setStoredMonth(loadedMonth, result);
+            monthToLoad.setItems(persistenceService.getStoredMonths());
+        } catch (Exception e) {
+            logText.setText("Fehler: " + e.getMessage());
+            log.warn("Fehler beim Speichern", e);
+        }
+    }
+
     private void updateFooter() {
         int allPostings = result == null ? 0 : result.size();
         long mappedPostings = result == null ? 0 : result.stream().filter(RuleResult::hasBuchungenForWholeSum).count();

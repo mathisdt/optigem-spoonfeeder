@@ -1,8 +1,11 @@
 package org.zephyrsoft.optigemspoonfeeder.service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
@@ -10,8 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
+import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
+import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
+import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
 import org.zephyrsoft.optigemspoonfeeder.model.TableRow;
+import org.zephyrsoft.optigemspoonfeeder.source.SourceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -75,6 +82,27 @@ class PersistenceServiceIT {
 			.findAny()
 			.orElseThrow();
 		assertEquals(4, tmpAfterUpdate.size());
+	}
+
+	@Test
+	void writeAndReadStoredMonth() {
+		YearMonth ym = YearMonth.of(2024, 1);
+		service.setStoredMonth(ym, null);
+
+		assertThat(service.getStoredMonths()).isEmpty();
+
+		SourceEntry s1 = new SourceEntry();
+		s1.setBetrag(new BigDecimal("200.50"));
+		s1.setSollHabenKennung(SourceEntry.SollHabenKennung.DEBIT);
+		s1.setValutaDatum(LocalDate.of(2024, 1, 14));
+		Buchung b1 = new Buchung(480, 0, 0, "");
+		RuleResult r1 = new RuleResult(s1, b1);
+		RulesResult rr = new RulesResult(List.of(r1), "Log 123\nLog456");
+		service.setStoredMonth(ym, rr);
+
+		assertThat(service.getStoredMonths()).size().isEqualTo(1);
+		assertThat(service.getStoredMonth(ym).getResults()).size().isEqualTo(1);
+		assertThat(service.getStoredMonth(ym).getLogMessages()).isNotBlank();
 	}
 
 }

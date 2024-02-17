@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @ConfigurationProperties("org.zephyrsoft.optigem-spoonfeeder")
 @Getter
@@ -27,6 +28,7 @@ public class OptigemSpoonfeederProperties {
 
 	@Getter
 	@Setter
+	@ToString
 	public static class AccountProperties {
 		private String name;
 		private String description;

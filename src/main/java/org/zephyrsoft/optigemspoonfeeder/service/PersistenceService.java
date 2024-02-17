@@ -5,15 +5,27 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.store.afs.nio.types.NioFileSystem;
+import org.eclipse.store.storage.embedded.types.EmbeddedStorageFoundation;
+import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
+import org.eclipse.store.storage.types.Storage;
+import org.eclipse.store.storage.types.StorageBackupSetup;
+import org.eclipse.store.storage.types.StorageConfiguration;
 import org.springframework.stereotype.Service;
 import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
+import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
+import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
 import org.zephyrsoft.optigemspoonfeeder.model.TableRow;
+import org.zephyrsoft.optigemspoonfeeder.model.store.StorageContainer;
 
 import com.coreoz.windmill.Windmill;
 import com.coreoz.windmill.exports.config.ExportHeaderMapping;
@@ -23,6 +35,8 @@ import com.coreoz.windmill.exports.exporters.excel.ExportExcelConfig;
 import com.coreoz.windmill.files.FileSource;
 import com.coreoz.windmill.imports.Row;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,8 +46,36 @@ import lombok.extern.slf4j.Slf4j;
 public class PersistenceService {
 
 	private static final String RULES_FILENAME = "rules.groovy";
+	private static final String DATA_SUBDIR = "saved-months";
+	private static final String BACKUP_SUBDIR = "saved-months-backup";
 
 	private final OptigemSpoonfeederProperties properties;
+
+	private EmbeddedStorageManager storageManager;
+	private StorageContainer storageContainer = new StorageContainer();
+
+	@PostConstruct
+	public void initStorage() {
+		NioFileSystem fileSystem = NioFileSystem.New();
+		storageManager = EmbeddedStorageFoundation.New()
+			.setConfiguration(
+				StorageConfiguration.Builder()
+					.setStorageFileProvider(Storage.FileProviderBuilder(fileSystem)
+						.setDirectory(fileSystem.ensureDirectory(properties.getDir().resolve(DATA_SUBDIR)))
+						.createFileProvider()
+					)
+					.setBackupSetup(StorageBackupSetup.New(fileSystem.ensureDirectory(properties.getDir().resolve(BACKUP_SUBDIR))))
+					.createConfiguration()
+			)
+			.setRoot(storageContainer)
+			.createEmbeddedStorageManager()
+			.start();
+	}
+
+	@PreDestroy
+	public void stopStorage() {
+		storageManager.shutdown();
+	}
 
 	public String getRules() {
 		try {
@@ -132,5 +174,22 @@ public class PersistenceService {
 			log.warn("could not write table {} to file {}", table.getName(), table.getFilename(), ioe);
 			return false;
 		}
+	}
+
+	public SortedSet<YearMonth> getStoredMonths() {
+		return new TreeSet<>(storageContainer.getData().keySet());
+	}
+
+	public RulesResult getStoredMonth(YearMonth yearMonth) {
+		return storageContainer.getData().get(yearMonth);
+	}
+
+	public void setStoredMonth(YearMonth yearMonth, RulesResult ruleResults) {
+		if (ruleResults == null) {
+			storageContainer.getData().remove(yearMonth);
+		} else {
+			storageContainer.getData().put(yearMonth, ruleResults);
+		}
+		storageManager.storeRoot();
 	}
 }

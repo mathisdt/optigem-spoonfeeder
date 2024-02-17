@@ -1,4 +1,6 @@
 table_tmp.*
+/src/test/resources/basedata/saved-months
+/src/test/resources/basedata/saved-months-backup
 .~*
 application-local.properties
 application-local.yaml
