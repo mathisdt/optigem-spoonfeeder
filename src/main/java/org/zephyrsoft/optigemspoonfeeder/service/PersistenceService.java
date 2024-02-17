@@ -183,7 +183,11 @@ public class PersistenceService {
 	private String readStoredMonth(YearMonth yearMonth) {
 		String filename = YEAR_MONTH_FORMAT.format(yearMonth) + ".json";
 		try {
-			return Files.readString(properties.getDir().resolve(DATA_SUBDIR).resolve(filename));
+			Path dir = properties.getDir().resolve(DATA_SUBDIR);
+			if (!Files.exists(dir)) {
+				Files.createDirectory(dir);
+			}
+			return Files.readString(dir.resolve(filename));
 		} catch (IOException e) {
 			throw new IllegalStateException("could not read " + filename + " from " + properties.getDir() + "/" + DATA_SUBDIR, e);
 		}
@@ -192,7 +196,14 @@ public class PersistenceService {
 	private void deleteStoredMonth(YearMonth yearMonth) {
 		String filename = YEAR_MONTH_FORMAT.format(yearMonth) + ".json";
 		try {
-			Files.delete(properties.getDir().resolve(DATA_SUBDIR).resolve(filename));
+			Path dir = properties.getDir().resolve(DATA_SUBDIR);
+			if (!Files.exists(dir)) {
+				Files.createDirectory(dir);
+			}
+			Path file = dir.resolve(filename);
+			if (Files.exists(file) && Files.isRegularFile(file)) {
+				Files.delete(file);
+			}
 		} catch (IOException e) {
 			throw new IllegalStateException("could not delete " + filename + " from " + properties.getDir() + "/" + DATA_SUBDIR, e);
 		}
@@ -201,14 +212,26 @@ public class PersistenceService {
 	private void writeStoredMonth(YearMonth yearMonth, RulesResult rulesResult) {
 		String filename = YEAR_MONTH_FORMAT.format(yearMonth) + ".json";
 		try {
-			Files.writeString(properties.getDir().resolve(DATA_SUBDIR).resolve(filename), gson.toJson(rulesResult));
+			Path dir = properties.getDir().resolve(DATA_SUBDIR);
+			if (!Files.exists(dir)) {
+				Files.createDirectory(dir);
+			}
+			Files.writeString(dir.resolve(filename), gson.toJson(rulesResult));
 		} catch (IOException e) {
 			throw new IllegalStateException("could not write to " + filename + " in " + properties.getDir() + "/" + DATA_SUBDIR, e);
 		}
 	}
 
 	public SortedSet<YearMonth> getStoredMonths() {
-		try (Stream<Path> files = Files.find(properties.getDir().resolve(DATA_SUBDIR), 1, (p, a) -> JSON_FILE_NAME.matcher(p.getFileName().toString())
+		Path dir = properties.getDir().resolve(DATA_SUBDIR);
+		if (!Files.exists(dir)) {
+			try {
+				Files.createDirectory(dir);
+			} catch (IOException e) {
+				throw new IllegalStateException("could not create " + properties.getDir() + "/" + DATA_SUBDIR, e);
+			}
+		}
+		try (Stream<Path> files = Files.find(dir, 1, (p, a) -> JSON_FILE_NAME.matcher(p.getFileName().toString())
 			.matches())) {
 			return files
 				.map(p -> YearMonth.parse(JSON_FILE_EXTENSION.matcher(p.getFileName().toString()).replaceAll(""), YEAR_MONTH_FORMAT))
