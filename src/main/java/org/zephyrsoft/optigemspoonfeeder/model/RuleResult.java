@@ -8,13 +8,16 @@ import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.zephyrsoft.optigemspoonfeeder.source.SourceEntry;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @Getter
 @Setter
 @ToString
+@NoArgsConstructor(access = AccessLevel.PRIVATE) // for GSON
 public class RuleResult {
 
 	private SourceEntry input;

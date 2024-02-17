@@ -3,13 +3,16 @@ package org.zephyrsoft.optigemspoonfeeder.model;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @Getter
 @Setter
 @ToString
+@NoArgsConstructor(access = AccessLevel.PRIVATE) // for GSON
 public class Buchung {
 	private LocalDate datum;
 	private int hauptkonto;
