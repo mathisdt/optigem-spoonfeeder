@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.2</version>
+        <version>3.2.3</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>org.zephyrsoft</groupId>
@@ -16,7 +16,6 @@
     <description>Imports MT940 or Hibiscus data via REST and generates Optigem postings via rules or manually.</description>
     <properties>
         <java.version>21</java.version>
-        <spring-boot.version>3.2.2</spring-boot.version>
         <vaadin.version>24.3.5</vaadin.version>
         <gson.version>2.10.1</gson.version>
         <gson-javatime-serialisers.version>1.1.2</gson-javatime-serialisers.version>
