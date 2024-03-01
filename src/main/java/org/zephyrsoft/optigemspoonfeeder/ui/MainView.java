@@ -504,7 +504,7 @@ final class MainView extends VerticalLayout {
                 layout.setSizeFull();
                 for (Buchung b : rr.getResult()) {
                     Span main = new Span(rr.getResult() == null ? "" : String.valueOf(b.getHauptkonto()));
-                    String kontoName = getKontoName(b.getHauptkonto(), 0);
+                    String kontoName = nonNull(getKontoName(b.getHauptkonto(), 0));
                     Span sub = new Span(rr.getResult() == null ? "" : kontoName);
                     main.setTitle(kontoName);
                     sub.setTitle(kontoName);
@@ -531,7 +531,7 @@ final class MainView extends VerticalLayout {
                 layout.setSizeFull();
                 for (Buchung b : rr.getResult()) {
                     Span main = new Span(rr.getResult() == null ? "" : String.valueOf(b.getUnterkonto()));
-                    String kontoName = getKontoName(b.getHauptkonto(), b.getUnterkonto());
+                    String kontoName = nonNull(getKontoName(b.getHauptkonto(), b.getUnterkonto()));
                     Span sub = new Span(rr.getResult() == null ? "" : kontoName);
                     main.setTitle(kontoName);
                     sub.setTitle(kontoName);
@@ -558,7 +558,7 @@ final class MainView extends VerticalLayout {
                 layout.setSizeFull();
                 for (Buchung b : rr.getResult()) {
                     Span main = new Span(rr.getResult() == null ? "" : String.valueOf(b.getProjekt()));
-                    String projektName = getProjektName(b.getProjekt());
+                    String projektName = nonNull(getProjektName(b.getProjekt()));
                     Span sub = new Span(rr.getResult() == null ? "" : projektName);
                     main.setTitle(projektName);
                     sub.setTitle(projektName);
@@ -636,5 +636,9 @@ final class MainView extends VerticalLayout {
 
     private static Renderer<RuleResult> nr(ValueProvider<RuleResult, Number> valueProvider) {
         return new NumberRenderer<>(valueProvider, "%,.2f €", Locale.GERMAN);
+    }
+
+    private static String nonNull(String str) {
+        return str == null ? "" : str;
     }
 }
