@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
+import org.zephyrsoft.optigemspoonfeeder.model.AccountMonth;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
@@ -86,8 +87,8 @@ class PersistenceServiceIT {
 
 	@Test
 	void writeAndReadStoredMonth() {
-		YearMonth ym = YearMonth.of(2024, 1);
-		service.setStoredMonth(ym, null);
+		AccountMonth accountMonth = new AccountMonth("Test 1", YearMonth.of(2024, 1));
+		service.setStoredMonth(accountMonth, null);
 
 		assertThat(service.getStoredMonths()).isEmpty();
 
@@ -98,11 +99,11 @@ class PersistenceServiceIT {
 		Buchung b1 = new Buchung(480, 0, 0, "");
 		RuleResult r1 = new RuleResult(s1, b1);
 		RulesResult rr = new RulesResult(List.of(r1), "Log 123\nLog456");
-		service.setStoredMonth(ym, rr);
+		service.setStoredMonth(accountMonth, rr);
 
 		assertThat(service.getStoredMonths()).size().isEqualTo(1);
-		assertThat(service.getStoredMonth(ym).getResults()).size().isEqualTo(1);
-		assertThat(service.getStoredMonth(ym).getLogMessages()).isNotBlank();
+		assertThat(service.getStoredMonth(accountMonth).getResults()).size().isEqualTo(1);
+		assertThat(service.getStoredMonth(accountMonth).getLogMessages()).isNotBlank();
 	}
 
 }

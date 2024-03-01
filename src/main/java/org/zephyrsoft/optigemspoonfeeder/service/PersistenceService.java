@@ -6,19 +6,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.NumberFormat;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
+import org.zephyrsoft.optigemspoonfeeder.model.AccountMonth;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
 import org.zephyrsoft.optigemspoonfeeder.model.TableRow;
@@ -63,9 +61,6 @@ public class PersistenceService {
 
 	private static final String RULES_FILENAME = "rules.groovy";
 	private static final String DATA_SUBDIR = "saved-months";
-	private static final DateTimeFormatter YEAR_MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
-	private static final Pattern JSON_FILE_NAME = Pattern.compile("^\\d{4}-\\d{2}.json$");
-	private static final Pattern JSON_FILE_EXTENSION = Pattern.compile(".json$");
 
 	private final OptigemSpoonfeederProperties properties;
 
@@ -180,49 +175,46 @@ public class PersistenceService {
 		}
 	}
 
-	private String readStoredMonth(YearMonth yearMonth) {
-		String filename = YEAR_MONTH_FORMAT.format(yearMonth) + ".json";
+	private String readStoredMonth(AccountMonth accountMonth) {
 		try {
 			Path dir = properties.getDir().resolve(DATA_SUBDIR);
 			if (!Files.exists(dir)) {
 				Files.createDirectory(dir);
 			}
-			return Files.readString(dir.resolve(filename));
+			return Files.readString(dir.resolve(accountMonth.getFilename()));
 		} catch (IOException e) {
-			throw new IllegalStateException("could not read " + filename + " from " + properties.getDir() + "/" + DATA_SUBDIR, e);
+			throw new IllegalStateException("could not read " + accountMonth.getFilename() + " from " + properties.getDir() + "/" + DATA_SUBDIR, e);
 		}
 	}
 
-	private void deleteStoredMonth(YearMonth yearMonth) {
-		String filename = YEAR_MONTH_FORMAT.format(yearMonth) + ".json";
+	private void deleteStoredMonth(AccountMonth accountMonth) {
 		try {
 			Path dir = properties.getDir().resolve(DATA_SUBDIR);
 			if (!Files.exists(dir)) {
 				Files.createDirectory(dir);
 			}
-			Path file = dir.resolve(filename);
+			Path file = dir.resolve(accountMonth.getFilename());
 			if (Files.exists(file) && Files.isRegularFile(file)) {
 				Files.delete(file);
 			}
 		} catch (IOException e) {
-			throw new IllegalStateException("could not delete " + filename + " from " + properties.getDir() + "/" + DATA_SUBDIR, e);
+			throw new IllegalStateException("could not delete " + accountMonth.getFilename() + " from " + properties.getDir() + "/" + DATA_SUBDIR, e);
 		}
 	}
 
-	private void writeStoredMonth(YearMonth yearMonth, RulesResult rulesResult) {
-		String filename = YEAR_MONTH_FORMAT.format(yearMonth) + ".json";
+	private void writeStoredMonth(AccountMonth accountMonth, RulesResult rulesResult) {
 		try {
 			Path dir = properties.getDir().resolve(DATA_SUBDIR);
 			if (!Files.exists(dir)) {
 				Files.createDirectory(dir);
 			}
-			Files.writeString(dir.resolve(filename), gson.toJson(rulesResult));
+			Files.writeString(dir.resolve(accountMonth.getFilename()), gson.toJson(rulesResult));
 		} catch (IOException e) {
-			throw new IllegalStateException("could not write to " + filename + " in " + properties.getDir() + "/" + DATA_SUBDIR, e);
+			throw new IllegalStateException("could not write to " + accountMonth.getFilename() + " in " + properties.getDir() + "/" + DATA_SUBDIR, e);
 		}
 	}
 
-	public SortedSet<YearMonth> getStoredMonths() {
+	public SortedSet<AccountMonth> getStoredMonths() {
 		Path dir = properties.getDir().resolve(DATA_SUBDIR);
 		if (!Files.exists(dir)) {
 			try {
@@ -231,25 +223,24 @@ public class PersistenceService {
 				throw new IllegalStateException("could not create " + properties.getDir() + "/" + DATA_SUBDIR, e);
 			}
 		}
-		try (Stream<Path> files = Files.find(dir, 1, (p, a) -> JSON_FILE_NAME.matcher(p.getFileName().toString())
-			.matches())) {
+		try (Stream<Path> files = Files.find(dir, 1, (p, a) -> AccountMonth.matches(p.getFileName().toString()))) {
 			return files
-				.map(p -> YearMonth.parse(JSON_FILE_EXTENSION.matcher(p.getFileName().toString()).replaceAll(""), YEAR_MONTH_FORMAT))
+				.map(p -> AccountMonth.fromFilename(p.getFileName().toString()))
 				.collect(Collectors.toCollection(TreeSet::new));
 		} catch (IOException e) {
 			throw new IllegalStateException("could not list files from " + properties.getDir() + "/" + DATA_SUBDIR, e);
 		}
 	}
 
-	public RulesResult getStoredMonth(YearMonth yearMonth) {
-		return gson.fromJson(readStoredMonth(yearMonth), RulesResult.class);
+	public RulesResult getStoredMonth(AccountMonth accountMonth) {
+		return gson.fromJson(readStoredMonth(accountMonth), RulesResult.class);
 	}
 
-	public void setStoredMonth(YearMonth yearMonth, RulesResult ruleResults) {
+	public void setStoredMonth(AccountMonth accountMonth, RulesResult ruleResults) {
 		if (ruleResults == null) {
-			deleteStoredMonth(yearMonth);
+			deleteStoredMonth(accountMonth);
 		} else {
-			writeStoredMonth(yearMonth, ruleResults);
+			writeStoredMonth(accountMonth, ruleResults);
 		}
 	}
 }

@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
+import org.zephyrsoft.optigemspoonfeeder.model.AccountMonth;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
 import org.zephyrsoft.optigemspoonfeeder.model.Konto;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
@@ -88,14 +89,14 @@ final class MainView extends VerticalLayout {
     private String personsColumnVorname;
     private String personsColumnNachname;
     private String accountsHkForPersons;
-    private YearMonth loadedMonth;
+    private AccountMonth loadedMonth;
     private String originalFilename;
     private RulesResult result;
 
     private final Div logArea;
     private final Grid<RuleResult> grid;
     private final Span logText;
-    private final ComboBox<YearMonth> monthToLoad;
+    private final ComboBox<AccountMonth> monthToLoad;
     private final Button load;
     private final Button save;
 
@@ -192,7 +193,7 @@ final class MainView extends VerticalLayout {
         load = new Button("Laden");
 
         monthToLoad = new ComboBox<>();
-        monthToLoad.setItemLabelGenerator(YEAR_MONTH_FORMAT::format);
+        monthToLoad.setItemLabelGenerator(AccountMonth::getLabel);
         monthToLoad.setItems(persistenceService.getStoredMonths());
         monthToLoad.addValueChangeListener(e -> load.setEnabled(monthToLoad.getValue() != null));
 
@@ -267,7 +268,7 @@ final class MainView extends VerticalLayout {
             originalFilename = account.getValue().getBezeichnungForFilename() + "_" + MONTH_FORMAT.format(month.getValue()) + ".hibiscus";
             timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
             parsed = hibiscusImportService.read(month.getValue(), account.getValue());
-            loadedMonth = month.getValue();
+            loadedMonth = new AccountMonth(account.getValue().getBezeichnung(), month.getValue());
         } catch (Exception e) {
             logText.setText("Fehler: " + e.getMessage());
             log.warn("Fehler beim Laden von Hibiscus", e);
@@ -341,7 +342,7 @@ final class MainView extends VerticalLayout {
             originalFilename = filename;
             timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
             parsed = parseService.parse(inputStream);
-            loadedMonth = YearMonth.from(parsed.getEntries().getFirst().getValutaDatum());
+            loadedMonth = new AccountMonth(parsed.getEntries().getFirst().getKontobezeichnung(), YearMonth.from(parsed.getEntries().getFirst().getValutaDatum()));
         } catch (Exception e) {
             logText.setText("Fehler: " + e.getMessage());
             log.warn("Fehler beim Parsen", e);
@@ -364,9 +365,9 @@ final class MainView extends VerticalLayout {
         }
     }
 
-    private void loadStoredMonth(YearMonth yearMonth) {
+    private void loadStoredMonth(AccountMonth accountMonth) {
         try {
-            result = persistenceService.getStoredMonth(yearMonth);
+            result = persistenceService.getStoredMonth(accountMonth);
 
             if (!result.getResults().isEmpty()) {
                 String konto = result.getResults().get(0).getInput().getKontobezeichnung();
@@ -377,7 +378,7 @@ final class MainView extends VerticalLayout {
                 interpretAccountProperties(accountProperties);
             }
 
-            logArea.setText("Monat " + YEAR_MONTH_FORMAT.format(yearMonth) +" geladen\n" + result.getLogMessages());
+            logArea.setText(accountMonth.getLabel() +" geladen\n" + result.getLogMessages());
             updateFooter();
 
             grid.removeAllColumns();
