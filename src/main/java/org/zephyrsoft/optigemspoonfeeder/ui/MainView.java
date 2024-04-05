@@ -285,6 +285,8 @@ final class MainView extends VerticalLayout {
                     log.warn("konfigurierte Konten-Tabelle {} nicht gefunden", accountTableName);
                     return null;
                 });
+        } else {
+            tableOptigemAccounts = null;
         }
         if (StringUtils.isNotBlank(projectsTableName)) {
             tableOptigemProjects = tables.stream()
@@ -294,6 +296,8 @@ final class MainView extends VerticalLayout {
                     log.warn("konfigurierte Projekte-Tabelle {} nicht gefunden", projectsTableName);
                     return null;
                 });
+        } else {
+            tableOptigemProjects = null;
         }
     }
 
