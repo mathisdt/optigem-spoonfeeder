@@ -587,6 +587,8 @@ final class EditDialog extends Dialog {
                 .map(r -> new IdAndName(Integer.parseInt(r.get(projectsColumnNr)), r.get(projectsColumnBez)))
                 .toList()));
             setCalculatedComboboxDropdownWidth(extraProjektComboBox);
+        } else {
+            extraProjektComboBox.setItems(new IdAndName(0, "allgemein"));
         }
 
         extraHauptkontoComboBox.addValueChangeListener(e -> {
