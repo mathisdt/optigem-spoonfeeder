@@ -380,6 +380,7 @@ final class MainView extends VerticalLayout {
 
             logArea.setText(accountMonth.getLabel() +" geladen\n" + result.getLogMessages());
             updateFooter();
+            loadedMonth = accountMonth;
 
             grid.removeAllColumns();
             grid.setItems(new ListDataProvider<>(result.getResults()));
