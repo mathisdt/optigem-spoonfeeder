@@ -189,8 +189,10 @@ final class EditDialog extends Dialog {
                 .filter(r -> r.get(projectsColumnNr) != null && r.get(projectsColumnBez) != null)
                 .map(r -> new IdAndName(Integer.parseInt(r.get(projectsColumnNr)), r.get(projectsColumnBez)))
                 .toList()));
-            setCalculatedComboboxDropdownWidth(projektComboBox);
+        } else {
+            projektComboBox.setItems(new IdAndName(0, "allgemein"));
         }
+        setCalculatedComboboxDropdownWidth(projektComboBox);
 
         binder = new Binder<>(RuleResult.class);
 
