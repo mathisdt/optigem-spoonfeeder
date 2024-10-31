@@ -315,6 +315,12 @@ final class MainView extends VerticalLayout {
     private void applyRulesToParsedData() {
         convertParsedData();
 
+        updateDownloadButtons();
+
+        updateFooter();
+    }
+
+    private void updateDownloadButtons() {
         buttons.removeAll();
 
         StreamResource streamBuchungen = new StreamResource(
@@ -336,8 +342,6 @@ final class MainView extends VerticalLayout {
         downloadRestMt940.add(new Button("Rest (MT940)", new Icon(VaadinIcon.DOWNLOAD)));
 
         buttons.add(downloadBuchungen, downloadRestMt940);
-
-        updateFooter();
     }
 
     private void parseUploadedFile(InputStream inputStream, String filename) {
@@ -385,6 +389,9 @@ final class MainView extends VerticalLayout {
             logArea.setText(accountMonth.getLabel() +" geladen\n" + result.getLogMessages());
             updateFooter();
             loadedMonth = accountMonth;
+            originalFilename = accountMonth.getAccountForFilename() + "_" + MONTH_FORMAT.format(accountMonth.getYearMonth()) + ".hibiscus";
+            timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
+            updateDownloadButtons();
 
             grid.removeAllColumns();
             grid.setItems(new ListDataProvider<>(result.getResults()));

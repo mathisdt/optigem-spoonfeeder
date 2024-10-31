@@ -23,6 +23,10 @@ public class AccountMonth implements Comparable<AccountMonth> {
     private String account;
     private YearMonth yearMonth;
 
+    public String getAccountForFilename() {
+        return account.replaceAll("[^a-zA-Z0-9]", "_").replaceAll("__", "_");
+    }
+
     public String getFilename() {
         return account + "-" + YEAR_MONTH_FORMAT.format(yearMonth) + ".json";
     }
