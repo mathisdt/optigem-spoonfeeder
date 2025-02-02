@@ -48,6 +48,10 @@ public class RuleResult {
 			BigDecimal::compareTo) == 0;
 	}
 
+	public RuleResult withBuchung(Buchung buchung) {
+		return new RuleResult(input, buchung);
+	}
+
 	public void fillGeneralData() {
 		for (Buchung buchung : result) {
 			// fill general data

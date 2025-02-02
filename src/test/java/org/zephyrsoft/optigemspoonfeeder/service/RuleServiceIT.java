@@ -13,6 +13,7 @@ import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.source.SourceFile;
@@ -56,6 +57,44 @@ class RuleServiceIT {
 			assertThat(rulesResult)
 					.areExactly(1, new Condition<>(rr -> rr.getResult().isEmpty()
 							&& rr.getInput().getVerwendungszweck().contains("Einzahlung Bar"), ""));
+
+			// modify the data for re-application of the rules
+			RuleResult noBooking = rulesResult.stream()
+				.filter(rr -> rr.getResult().isEmpty())
+				.findAny()
+				.orElseThrow();
+			noBooking.getResult().add(new Buchung(8600, 0, 0, "Einzahlung BAR"));
+
+			RuleResult bareinzahlungBooking = rulesResult.stream()
+				.filter(rr -> rr.getResult().getFirst().getBuchungstext().equals("Bareinzahlung"))
+				.findAny()
+				.orElseThrow();
+			bareinzahlungBooking.clearBuchungen();
+
+			// re-apply rules
+			RulesResult result2 = service.apply(result);
+			rulesResult = result2.getResults();
+			assertNotNull(rulesResult);
+			assertEquals(8, rulesResult.size());
+
+			// matched:
+			assertThat(rulesResult)
+				.areExactly(1, matches(4940, 0, 0, "Telekom"));
+			assertThat(rulesResult)
+				.areExactly(1, matches(8010, 2, 0, "Vorname Test 2 Nachname Test 2"));
+			assertThat(rulesResult)
+				.areExactly(1, matches(8010, 1, 1, "Vorname Test 1 Nachname Test 1"));
+			assertThat(rulesResult)
+				.areExactly(1, matches(8205, 4, 21, "GFYC-Freizeit"));
+			assertThat(rulesResult)
+				.areExactly(1, matches(8205, 5, 20, "Roots-Freizeit"));
+			assertThat(rulesResult)
+				.areExactly(1, matches(8205, 5, 20, "Freizeit Junge Erwachsene"));
+			assertThat(rulesResult)
+				.areExactly(1, matches(1360, 0, 0, "Bareinzahlung"));
+
+			// unmatched by the rules, but manually edited previously:
+			assertThat(rulesResult).areExactly(1, matches(8600, 0, 0, "Einzahlung BAR"));
 		}
 	}
 

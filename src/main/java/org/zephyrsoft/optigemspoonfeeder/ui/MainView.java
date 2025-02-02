@@ -359,7 +359,11 @@ final class MainView extends VerticalLayout {
 
     private void convertParsedData() {
         try {
-            result = ruleService.apply(parsed);
+            if (result != null) {
+                result = ruleService.apply(result);
+            } else {
+                result = ruleService.apply(parsed);
+            }
             logArea.setText(result.getLogMessages());
             updateFooter();
             save.setEnabled(true);
