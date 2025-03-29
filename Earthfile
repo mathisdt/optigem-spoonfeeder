@@ -5,8 +5,7 @@ build:
     WORKDIR /project
     COPY .git .git
     COPY pom.xml ./
-    COPY src/main src/main
-    COPY src/test src/test
+    COPY src src
     RUN TZ=Europe/Berlin mvn clean verify -U --no-transfer-progress -Pproduction
     SAVE ARTIFACT target AS LOCAL target
 
@@ -18,10 +17,10 @@ build-and-release-on-github:
     WORKDIR /project
     COPY .git .git
     COPY +build/target target
-    RUN apt update && apt install -y curl gpg
+    RUN apt-get update >/dev/null 2>&1 && apt-get -y install curl gpg >/dev/null 2>&1
     RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg
     RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-    RUN apt update && apt install -y gh
+    RUN apt-get update >/dev/null 2>&1 && apt-get -y install gh >/dev/null 2>&1
     RUN --push export release_timestamp=$(date '+%Y-%m-%d @ %H:%M'); \
                export release_timestamp_terse=$(date '+%Y-%m-%d-%H-%M'); \
                export release_hash_short=$(git rev-parse --short HEAD); \
