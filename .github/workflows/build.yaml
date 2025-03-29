@@ -1,4 +1,5 @@
-name: Build
+name: build
+run-name: build commit with earthly
 
 on:
   push:
@@ -7,8 +8,7 @@ on:
 
 jobs:
   release:
-    uses: mathisdt/workflows/.github/workflows/maven.yaml@master
+    uses: mathisdt/workflows/.github/workflows/earthly.yaml@master
     with:
-      additional-maven-parameters: -Pproduction
-      pattern-to-release: optigem-spoonfeeder-*.jar
+      pattern-to-release: target/optigem-spoonfeeder-*.jar
     secrets: inherit
