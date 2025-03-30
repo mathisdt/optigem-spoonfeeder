@@ -143,3 +143,10 @@ Bei jeder Regelausführung werden diese Dateien neu eingelesen.
 Hier findet [Project Lombok](https://projectlombok.org) Verwendung, evtl. muss also in der IDE das
 entsprechende Plugin installiert werden.
 
+## Build mit Earthly
+
+Der CI-Build dieses Projekts verwendet [Earthly](https://docs.earthly.dev/),  welches wiederum 
+Containervirtualisierung (z. B. Docker oder Podman) nutzt. Sie können den Build auch lokal ausführen 
+(sofern Sie Earthly und eine OCI-kompatible Container-Engine installiert haben), indem Sie 
+`earthly +build` ausführen. Dadurch wird ein Container mit allen für den Build benötigten Komponenten
+erstellt, das Paket darin gebaut und die Ergebnisse anschließend in das Verzeichnis `target` kopiert.
