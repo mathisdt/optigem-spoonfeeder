@@ -76,6 +76,7 @@ final class MainView extends VerticalLayout {
 
     private String timestamp;
     private SourceFile parsed;
+    private Konto parsedAccount;
     private Table tableOptigemAccounts;
     private String accountsColumnHk;
     private String accountsColumnUk;
@@ -120,7 +121,7 @@ final class MainView extends VerticalLayout {
         setSizeFull();
 
         Button reapplyRules = new Button("Regeln erneut anwenden");
-        reapplyRules.addClickListener(e -> applyRulesToParsedData());
+        reapplyRules.addClickListener(e -> loadTablesAndApplyRules(properties, parsedAccount));
         reapplyRules.setEnabled(false);
 
         boolean hibiscusConfiguredAndReachable = hibiscusImportService.isConfiguredAndReachable();
@@ -148,16 +149,7 @@ final class MainView extends VerticalLayout {
         loadFromHibiscusServerButton
             .addClickListener(e -> {
                 loadAndParseFromHibiscus(hibiscusImportService, month, account);
-                log.debug("load tables for bank account {}", account.getValue().getIban());
-                loadTables(account.getValue().getTableAccounts(), account.getValue().getTableProjects());
-
-                OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getBankAccount().get(account.getValue().getIban());
-                if (accountProperties == null) {
-                    accountProperties = properties.getBankAccountByDescription(account.getValue().getBezeichnung());
-                }
-                interpretAccountProperties(accountProperties);
-
-                applyRulesToParsedData();
+                loadTablesAndApplyRules(properties, account.getValue());
                 reapplyRules.setEnabled(true);
             });
         loadFromHibiscusServerButton.setEnabled(hibiscusConfiguredAndReachable);
@@ -239,6 +231,22 @@ final class MainView extends VerticalLayout {
                     + properties.getDir());
         }
     }
+    private void loadTablesAndApplyRules(final OptigemSpoonfeederProperties properties, final Konto account) {
+        if (account != null) {
+            log.debug("load tables for bank account {}", account.getIban());
+            loadTables(account.getTableAccounts(), account.getTableProjects());
+
+            OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getBankAccount().get(account.getIban());
+            if (accountProperties == null) {
+                accountProperties = properties.getBankAccountByDescription(account.getBezeichnung());
+            }
+            interpretAccountProperties(accountProperties);
+        } else {
+            log.debug("could not load tables and use properties for bank account because it was not given");
+        }
+
+        applyRulesToParsedData();
+    }
     private void interpretAccountProperties(final OptigemSpoonfeederProperties.AccountProperties accountProperties) {
         if (accountProperties != null) {
             log.debug("load tables for bank account {}", accountProperties);
@@ -267,6 +275,7 @@ final class MainView extends VerticalLayout {
             loadedMonth = null;
             originalFilename = account.getValue().getBezeichnungForFilename() + "_" + MONTH_FORMAT.format(month.getValue()) + ".hibiscus";
             timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
+            parsedAccount = account.getValue();
             parsed = hibiscusImportService.read(month.getValue(), account.getValue());
             loadedMonth = new AccountMonth(account.getValue().getBezeichnung(), month.getValue());
         } catch (Exception e) {
