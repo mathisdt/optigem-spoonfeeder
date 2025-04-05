@@ -31,13 +31,16 @@ steps:
       echo TIMESTAMP: $release_timestamp
       echo HASH: $release_hash
       echo TAG: $tag
-      git tag $tag $release_hash
-      git push origin $tag
-      export RELEASE=$(curl --header "Content-Type: application/json" \
+      curl --header "Content-Type: application/json" \
            --header "Authorization: token $CODEBERG_TOKEN" \
            --POST \
-           --data "{\"name\": \"Release $release_timestamp\", \"body\": \"built from commit $release_hash_short\", \"tag_name\": \"$tag\", \"target_commitish\": \"$release_hash\", \"draft\": false, \"hide_archive_links\": false, \"prerelease\": false}" \
-           https://codeberg.org/repos/$OWNER_NAME/$REPO_NAME/releases)
+           --data "{\"tag_name\": \"$tag\", \"target\": \"$release_hash\"}" \
+           https://codeberg.org/repos/$OWNER_NAME/$REPO_NAME/tags
+      export RELEASE=$(curl --header "Content-Type: application/json" \
+                            --header "Authorization: token $CODEBERG_TOKEN" \
+                            --POST \
+                            --data "{\"name\": \"Release $release_timestamp\", \"body\": \"built from commit $release_hash_short\", \"tag_name\": \"$tag\", \"target_commitish\": \"$release_hash\", \"draft\": false, \"hide_archive_links\": false, \"prerelease\": false}" \
+                            https://codeberg.org/repos/$OWNER_NAME/$REPO_NAME/releases)
       export RELEASE_ID=$(echo $RELEASE | jq -r '.id')
       if [ -n "$PATTERN_TO_RELEASE" ]; then
           export files=$(ls $PATTERN_TO_RELEASE)
