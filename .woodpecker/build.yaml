@@ -16,6 +16,8 @@ steps:
     commands: |
       export TZ=Europe/Berlin
       apt-get update >/dev/null 2>&1 && apt-get -y install git curl jq >/dev/null 2>&1
+      git config --global user.name "Codeberg Build"
+      git config --global user.email "codeberg@zephyrsoft.org"
       export BRANCH=$(git rev-parse --abbrev-ref HEAD)
       if [ "$BRANCH" != "main" -a "$BRANCH" != "master" ]; then
           echo "not releasing, we're on branch $BRANCH"
