@@ -2,14 +2,50 @@ when:
   - event: [push, manual]
 
 steps:
-  - name: run earthly
-    image: earthly/earthly:v0.8.15
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      FORCE_COLOR: 1
-      EARTHLY_EXEC_CMD: "/bin/sh"
-    secrets: [DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, TOKEN_REPO_READWRITE]
+  - name: build
+    image: maven:3.9.9-eclipse-temurin-21-alpine
     commands:
-      - if [ -n "$${DOCKERHUB_USERNAME}" -a -n "$${DOCKERHUB_TOKEN}" ]; then echo "doing docker login"; docker login -u $${DOCKERHUB_USERNAME} -p $${DOCKERHUB_TOKEN}; else echo "not doing docker login, no credentials configured"; fi
-      - earthly --ci --push  +build-and-release-on-codeberg --PATTERN_TO_RELEASE='target/optigem-spoonfeeder-*.jar' --CODEBERG_TOKEN=$${TOKEN_REPO_READWRITE}
+      - TZ=Europe/Berlin mvn clean verify -U --no-transfer-progress -Pproduction
+  - name: release on codeberg
+    image: ubuntu:noble
+    environment:
+      PATTERN_TO_RELEASE: 'target/optigem-spoonfeeder-*.jar'
+      TOKEN_REPO_READWRITE:
+        from_secret: TOKEN_REPO_READWRITE
+    commands:
+      - export BRANCH=$(git rev-parse --abbrev-ref HEAD)
+      - if [ "$BRANCH" != "main" -a "$BRANCH" != "master" ]; then
+          echo "not releasing, we're on branch $BRANCH";
+          exit 0
+        fi
+      - export release_timestamp=$(date '+%Y-%m-%d @ %H:%M')
+      - export release_timestamp_terse=$(date '+%Y-%m-%d-%H-%M')
+      - export release_hash_short=$(git rev-parse --short HEAD)
+      - export release_hash=$(git rev-parse HEAD)
+      - export tag=release-$release_timestamp_terse-$release_hash_short
+      - echo TIMESTAMP: $release_timestamp
+      - echo HASH: $release_hash
+      - echo TAG: $tag
+      - git tag $release_hash $tag
+      - git push origin $tag
+      - |
+        export RELEASE=$(curl --header "Content-Type: application/json" \
+          --header "Authorization: token $CODEBERG_TOKEN" \
+          --POST \
+          --data "{\"name\": \"Release $release_timestamp\", \"body\": \"built from commit $release_hash_short\", \"tag_name\": \"$tag\", \"target_commitish\": \"$release_hash\", \"draft\": false, \"hide_archive_links\": false, \"prerelease\": false}" \
+          https://codeberg.org/repos/$OWNER_NAME/$REPO_NAME/releases)
+      - export RELEASE_ID=$(echo $RELEASE | jq -r '.id')
+      - |
+        if [ -n "$PATTERN_TO_RELEASE" ]; then
+          echo FILES: $(ls $PATTERN_TO_RELEASE)
+          ls $PATTERN_TO_RELEASE | while read FILE; do
+            export BASEFILE=$(basename $FILE)
+            echo ADDING TO RELEASE: $FILE
+            curl --header "Authorization: token $CODEBERG_TOKEN" \
+              --POST \
+              --form file=@$FILE \
+              https://codeberg.org/repos/$OWNER_NAME/$REPO_NAME/releases/$RELEASE_ID/assets?name=$BASEFILE
+          done
+        else
+          echo NO FILES GIVEN
+        fi
