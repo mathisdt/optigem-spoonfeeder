@@ -13,6 +13,7 @@ steps:
       TOKEN_REPO_READWRITE:
         from_secret: TOKEN_REPO_READWRITE
     commands: |
+      apt-get update >/dev/null 2>&1 && apt-get -y install git curl jq >/dev/null 2>&1
       export BRANCH=$(git rev-parse --abbrev-ref HEAD)
       if [ "$BRANCH" != "main" -a "$BRANCH" != "master" ]; then
           echo "not releasing, we're on branch $BRANCH"
