@@ -33,12 +33,12 @@ steps:
       echo TAG: $tag
       curl --header "Content-Type: application/json" \
            --header "Authorization: token $CODEBERG_TOKEN" \
-           --POST \
+           --request POST \
            --data "{\"tag_name\": \"$tag\", \"target\": \"$release_hash\"}" \
            https://codeberg.org/repos/$OWNER_NAME/$REPO_NAME/tags
       export RELEASE=$(curl --header "Content-Type: application/json" \
                             --header "Authorization: token $CODEBERG_TOKEN" \
-                            --POST \
+                            --request POST \
                             --data "{\"name\": \"Release $release_timestamp\", \"body\": \"built from commit $release_hash_short\", \"tag_name\": \"$tag\", \"target_commitish\": \"$release_hash\", \"draft\": false, \"hide_archive_links\": false, \"prerelease\": false}" \
                             https://codeberg.org/repos/$OWNER_NAME/$REPO_NAME/releases)
       export RELEASE_ID=$(echo $RELEASE | jq -r '.id')
@@ -49,7 +49,7 @@ steps:
               export BASEFILE=$(basename $FILE)
               echo ADDING TO RELEASE: $FILE
               curl --header "Authorization: token $CODEBERG_TOKEN" \
-                   --POST \
+                   --request POST \
                    --form file=@$FILE \
                    https://codeberg.org/repos/$OWNER_NAME/$REPO_NAME/releases/$RELEASE_ID/assets?name=$BASEFILE
           done
