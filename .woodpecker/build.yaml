@@ -1,0 +1,15 @@
+when:
+  - event: [push, manual]
+
+steps:
+  - name: run earthly
+    image: earthly/earthly:v0.8.15
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - FORCE_COLOR=1
+      - EARTHLY_EXEC_CMD="/bin/sh"
+    secrets: [DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, TOKEN_REPO_READWRITE]
+    commands:
+      - if [ -n "$${DOCKERHUB_USERNAME}" -a -n "$${DOCKERHUB_TOKEN}" ]; then echo "doing docker login"; docker login -u $${DOCKERHUB_USERNAME} -p $${DOCKERHUB_TOKEN}; else echo "not doing docker login, no credentials configured"; fi
+      - earthly --ci --push  +build-and-release-on-codeberg --PATTERN_TO_RELEASE='target/optigem-spoonfeeder-*.jar' --CODEBERG_TOKEN=$${TOKEN_REPO_READWRITE}

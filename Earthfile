@@ -9,6 +9,53 @@ build:
     RUN TZ=Europe/Berlin mvn clean verify -U --no-transfer-progress -Pproduction
     SAVE ARTIFACT target AS LOCAL target
 
+build-and-release-on-codeberg:
+    ARG --required CODEBERG_TOKEN
+    ARG PATTERN_TO_RELEASE
+    ARG OWNER_NAME
+    ARG REPO_NAME
+    BUILD +build
+    FROM ubuntu:noble
+    WORKDIR /project
+    RUN apt-get update >/dev/null 2>&1 && apt-get -y install curl jq >/dev/null 2>&1
+    COPY .git .git
+    COPY +build/target target
+    RUN --push export BRANCH=$(git rev-parse --abbrev-ref HEAD); \
+               if [ "$BRANCH" != "main" -a "$BRANCH" != "master" ]; then \
+                   echo "not releasing, we're on branch $BRANCH"; \
+                   exit 0; \
+               fi; \
+               export release_timestamp=$(date '+%Y-%m-%d @ %H:%M'); \
+               export release_timestamp_terse=$(date '+%Y-%m-%d-%H-%M'); \
+               export release_hash_short=$(git rev-parse --short HEAD); \
+               export release_hash=$(git rev-parse HEAD); \
+               export tag=release-$release_timestamp_terse-$release_hash_short; \
+               echo TIMESTAMP: $release_timestamp; \
+               echo HASH: $release_hash; \
+               echo TAG: $tag; \
+               git tag $release_hash $tag; \
+               git push origin $tag; \
+               export RELEASE=$(curl --header "Content-Type: application/json" \
+                    --header "Authorization: token $CODEBERG_TOKEN" \
+                    --POST \
+                    --data "{\"name\": \"Release $release_timestamp\", \"body\": \"built from commit $release_hash_short\", \"tag_name\": \"$tag\", \"target_commitish\": \"$release_hash\", \"draft\": false, \"hide_archive_links\": false, \"prerelease\": false}" \
+                    https://codeberg.org/repos/$OWNER_NAME/$REPO_NAME/releases); \
+               export RELEASE_ID=$(echo $RELEASE | jq -r '.id'); \
+               if [ -n "$PATTERN_TO_RELEASE" ]; then \
+                   export files=$(ls $PATTERN_TO_RELEASE); \
+                   echo FILES: $files; \
+                   ls $PATTERN_TO_RELEASE | while read FILE; do \
+                       export BASEFILE=$(basename $FILE); \
+                       echo ADDING TO RELEASE: $FILE; \
+                       curl --header "Authorization: token $CODEBERG_TOKEN" \
+                            --POST \
+                            --form file=@$FILE \
+                            https://codeberg.org/repos/$OWNER_NAME/$REPO_NAME/releases/$RELEASE_ID/assets?name=$BASEFILE; \
+                   done; \
+               else \
+                   echo NO FILES GIVEN; \
+               fi
+
 build-and-release-on-github:
     ARG --required GITHUB_TOKEN
     ARG PATTERN_TO_RELEASE
