@@ -2,10 +2,11 @@ when:
   - event: [push, manual]
 
 clone:
-  - name: git
+  - name: clone
     image: woodpeckerci/plugin-git
     settings:
       depth: 0
+      partial: false
       recursive: true
 
 steps:
