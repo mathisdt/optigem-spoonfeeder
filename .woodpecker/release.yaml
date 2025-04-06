@@ -15,7 +15,7 @@ steps:
       TOKEN_REPO_READWRITE:
         from_secret: TOKEN_REPO_READWRITE
     commands: |
-      set -euo pipefail
+      set -eu
       export TZ=Europe/Berlin
       apt-get update >/dev/null 2>&1
       apt-get -y install git curl jq >/dev/null 2>&1
