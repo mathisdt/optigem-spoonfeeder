@@ -20,6 +20,7 @@ steps:
     commands: |
       set -eu
       export TZ=Europe/Berlin
+      echo installing packages...
       apt-get update >/dev/null 2>&1
       apt-get -y install git curl jq >/dev/null 2>&1
       export BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -37,13 +38,13 @@ steps:
       echo TAG: $tag
       curl --silent \
            --header "Content-Type: application/json" \
-           --header "Authorization: token $CODEBERG_TOKEN" \
+           --header "Authorization: token $TOKEN_REPO_READWRITE" \
            --request POST \
            --data "{\"tag_name\": \"$tag\", \"target\": \"$release_hash\"}" \
            https://codeberg.org/api/v1/repos/$CI_REPO_OWNER/$CI_REPO_NAME/tags
       export RELEASE=$(curl --silent \
                             --header "Content-Type: application/json" \
-                            --header "Authorization: token $CODEBERG_TOKEN" \
+                            --header "Authorization: token $TOKEN_REPO_READWRITE" \
                             --request POST \
                             --data "{\"name\": \"Release $release_timestamp\", \"body\": \"built from commit $release_hash_short\", \"tag_name\": \"$tag\", \"target_commitish\": \"$release_hash\", \"draft\": false, \"hide_archive_links\": false, \"prerelease\": false}" \
                             https://codeberg.org/api/v1/repos/$CI_REPO_OWNER/$CI_REPO_NAME/releases)
@@ -55,7 +56,7 @@ steps:
               export BASEFILE=$(basename $FILE)
               echo ADDING TO RELEASE $RELEASE_ID: $FILE
               curl --silent \
-                   --header "Authorization: token $CODEBERG_TOKEN" \
+                   --header "Authorization: token $TOKEN_REPO_READWRITE" \
                    --request POST \
                    --form attachment=@$FILE \
                    https://codeberg.org/api/v1/repos/$CI_REPO_OWNER/$CI_REPO_NAME/releases/$RELEASE_ID/assets?name=$BASEFILE
