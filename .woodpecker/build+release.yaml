@@ -1,14 +1,17 @@
 when:
-  - event: manual
+  - event: [push, manual]
 
 steps:
-  # step "build" duplicated and not referenced because resulting files are not shared between workflows from different yaml definitions:
   - name: build
+    when:
+      - event: [ push, manual ]
     image: maven:3.9.9-eclipse-temurin-21-alpine
     commands: |
       export TZ=Europe/Berlin
       mvn clean verify -U --no-transfer-progress -Pproduction
   - name: release on codeberg
+    when:
+      - event: manual
     image: ubuntu:noble
     environment:
       PATTERN_TO_RELEASE: 'target/optigem-spoonfeeder-*.jar'
