@@ -13,6 +13,7 @@ steps:
   - name: release on codeberg
     when:
       - event: manual
+        branch: [ master, main ]
     depends_on: [ build ]
     image: ubuntu:noble
     environment:
@@ -25,11 +26,6 @@ steps:
       echo installing packages...
       apt-get update >/dev/null 2>&1
       apt-get -y install git curl jq >/dev/null 2>&1
-      export BRANCH=$(git rev-parse --abbrev-ref HEAD)
-      if [ "$BRANCH" != "main" -a "$BRANCH" != "master" ]; then
-          echo "not releasing, we're on branch $BRANCH"
-          exit 0
-      fi
       export release_timestamp=$(date '+%Y-%m-%d @ %H:%M')
       export release_timestamp_terse=$(date '+%Y-%m-%d-%H-%M')
       export release_hash_short=$(git rev-parse --short HEAD)
@@ -69,6 +65,7 @@ steps:
   - name: mirror to Github
     when:
       - event: [ push, manual ]
+        branch: [ master, main ]
     depends_on: []
     image: alpine/git:latest
     environment:
@@ -76,4 +73,5 @@ steps:
         from_secret: TOKEN_GITHUB
     commands: |
       git remote add github https://mathisdt:$TOKEN_GITHUB@github.com/mathisdt/$CI_REPO_NAME.git
+      git remote set-url --push github https://mathisdt:$TOKEN_GITHUB@github.com/mathisdt/$CI_REPO_NAME.git
       git push github
