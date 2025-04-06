@@ -1,6 +1,13 @@
 when:
   - event: [push, manual]
 
+clone:
+  - name: git
+    image: woodpeckerci/plugin-git
+    settings:
+      depth: 0
+      recursive: true
+
 steps:
   - name: build
     when:
@@ -73,5 +80,4 @@ steps:
         from_secret: TOKEN_GITHUB
     commands: |
       git remote add github https://mathisdt:$TOKEN_GITHUB@github.com/mathisdt/$CI_REPO_NAME.git
-      git remote set-url --push github https://mathisdt:$TOKEN_GITHUB@github.com/mathisdt/$CI_REPO_NAME.git
       git push github
