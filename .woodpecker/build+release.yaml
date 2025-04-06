@@ -5,7 +5,7 @@ steps:
   - name: build
     when:
       - event: [ push, manual ]
-    image: maven:3.9.9-eclipse-temurin-21-alpine
+    image: maven:3.9-eclipse-temurin-21-alpine
     commands: |
       export TZ=Europe/Berlin
       mvn clean verify -U --no-transfer-progress -Pproduction
@@ -68,7 +68,7 @@ steps:
   - name: mirror to Github
     when:
       - event: [ push, manual ]
-    image: alpine/git
+    image: alpine/git:latest
     environment:
       TOKEN_GITHUB:
         from_secret: TOKEN_GITHUB
