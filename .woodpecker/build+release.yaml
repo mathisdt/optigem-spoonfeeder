@@ -12,6 +12,7 @@ steps:
   - name: release on codeberg
     when:
       - event: manual
+    depends_on: [ build ]
     image: ubuntu:noble
     environment:
       PATTERN_TO_RELEASE: 'target/optigem-spoonfeeder-*.jar'
@@ -64,3 +65,13 @@ steps:
       else
           echo NO FILES GIVEN
       fi
+  - name: mirror to Github
+    when:
+      - event: [ push, manual ]
+    image: alpine/git
+    environment:
+      TOKEN_GITHUB:
+        from_secret: TOKEN_GITHUB
+    commands: |
+      git remote add github https://mathisdt:$TOKEN_GITHUB@github.com/mathisdt/$CI_REPO_NAME.git
+      git push github
