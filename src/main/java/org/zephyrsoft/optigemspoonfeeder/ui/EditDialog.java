@@ -76,6 +76,7 @@ final class EditDialog extends Dialog {
     private final HorizontalLayout buchungstextLayout;
     private final Button saveButton;
     private Runnable hauptkontoValueChangeTask;
+    private final List<TextField> amountFields = new ArrayList<>();
 
     @SuppressWarnings("unchecked")
     public EditDialog(OptigemSpoonfeederProperties.AccountProperties accountProperties, Table tableOptigemAccounts, String accountsColumnHk,
@@ -119,6 +120,7 @@ final class EditDialog extends Dialog {
         Span buchungstext = new Span(rr.getInput().getBuchungstext());
 
         TextField betragField = new TextField();
+        amountFields.add(betragField);
         betragField.setId("betragField");
         betragField.setWidthFull();
 
@@ -231,6 +233,13 @@ final class EditDialog extends Dialog {
         buchungstextLayout.add(buchungstextField);
         formLayout.addFormItem(buchungstextLayout, "Buchungstext");
 
+        if (rr.getResult().isEmpty()) {
+            // one booking should always be present
+            Buchung firstBooking = new Buchung(-1, -1, -1, null);
+            firstBooking.setBetrag(rr.getInput().getBetrag());
+            rr.getResult().add(firstBooking);
+        }
+
         saveButton = new Button("Speichern & Schließen", e -> {
             try {
                 binder.writeBean(rr);
@@ -339,10 +348,24 @@ final class EditDialog extends Dialog {
         });
         addPerson.setTooltipText("Person und IBAN in Tabelle hinzufügen");
         Button addBuchung = new Button("Buchung hinzufügen", event -> {
-            rr.getResult().add(new Buchung(null, null, null, null));
+            Buchung buchung = new Buchung(null, null, null, null);
+            rr.getResult().add(buchung);
+            BigDecimal usedAmount = amountFields.stream()
+                .map(tf -> {
+                    try {
+                        return new BigDecimal(CURRENCY_FORMAT.parse(tf.getValue()).toString());
+                    } catch (ParseException e) {
+                        return BigDecimal.ZERO;
+                    }
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal restAmount = rr.getInput().getBetrag().subtract(usedAmount);
+            if (restAmount.signum() == 1) {
+                buchung.setBetrag(restAmount);
+            }
             int index = rr.getResult().size() - 1;
 
-            addFieldsForIndex(index);
+            addFieldsForIndex(index, buchung);
         });
         addBuchung.setTooltipText("weitere Buchung anfügen");
         Button removeBuchung = new Button("Buchung löschen", e -> {
@@ -350,6 +373,7 @@ final class EditDialog extends Dialog {
                 AbstractField<?, ?> lastBetrag = lastChildField(betragLayout);
                 binder.removeBinding(lastBetrag);
                 betragLayout.remove(lastBetrag);
+                amountFields.removeLast();
                 AbstractField<?, ?> lastHauptkonto = lastChildField(hauptkontoLayout);
                 binder.removeBinding(lastHauptkonto);
                 hauptkontoLayout.remove(lastHauptkonto);
@@ -437,7 +461,7 @@ final class EditDialog extends Dialog {
         });
 
         for (int index = 1; index < rr.getResult().size(); index++) {
-            addFieldsForIndex(index);
+            addFieldsForIndex(index, null);
         }
 
         binder.readBean(rr);
@@ -502,10 +526,14 @@ final class EditDialog extends Dialog {
         }
     }
 
-    private void addFieldsForIndex(final int index) {
+    private void addFieldsForIndex(final int index, Buchung buchung) {
         TextField extraBetragField = new TextField();
+        amountFields.add(extraBetragField);
         extraBetragField.setId("betragField" + index);
         extraBetragField.setWidthFull();
+        if (buchung != null) {
+            extraBetragField.setValue(CURRENCY_FORMAT.format(buchung.getBetrag()));
+        }
         betragLayout.add(extraBetragField);
         binder.forField(extraBetragField).bind(r -> getBetrag(r, index), (r, b) -> setBetrag(r, index, b));
 
@@ -740,7 +768,7 @@ final class EditDialog extends Dialog {
     }
 
     private IdAndName getHauptkonto(RuleResult rr, int index) {
-        if (rr.getResult().size() <= index) {
+        if (rr.getResult().size() <= index || rr.getResult().get(index).getHauptkonto() < 0) {
             return null;
         }
         String name = getKontoName(rr.getResult().get(index).getHauptkonto(), 0);
@@ -755,7 +783,7 @@ final class EditDialog extends Dialog {
     }
 
     private IdAndName getUnterkonto(RuleResult rr, int index) {
-        if (rr.getResult().size() <= index) {
+        if (rr.getResult().size() <= index || rr.getResult().get(index).getUnterkonto() < 0) {
             return null;
         }
         String name = getKontoName(rr.getResult().get(index).getHauptkonto(), rr.getResult().get(index).getUnterkonto());
@@ -770,7 +798,7 @@ final class EditDialog extends Dialog {
     }
 
     private IdAndName getProjekt(RuleResult rr, int index) {
-        if (rr.getResult().size() <= index) {
+        if (rr.getResult().size() <= index || rr.getResult().get(index).getProjekt() < 0) {
             return null;
         }
         String name = getProjektName(rr.getResult().get(index).getProjekt());
