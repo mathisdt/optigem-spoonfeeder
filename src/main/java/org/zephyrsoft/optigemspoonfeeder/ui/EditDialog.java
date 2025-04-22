@@ -6,13 +6,12 @@ import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
 import org.zephyrsoft.optigemspoonfeeder.model.Holder;
 import org.zephyrsoft.optigemspoonfeeder.model.IdAndName;
@@ -20,6 +19,7 @@ import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
 import org.zephyrsoft.optigemspoonfeeder.model.TableRow;
 import org.zephyrsoft.optigemspoonfeeder.service.PersistenceService;
+import org.zephyrsoft.optigemspoonfeeder.service.PersonService;
 
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.Component;
@@ -57,6 +57,7 @@ final class EditDialog extends Dialog {
         CURRENCY_FORMAT.setGroupingUsed(true);
     }
 
+    private final OptigemSpoonfeederProperties.AccountProperties accountProperties;
     private final Table tableOptigemAccounts;
     private final String accountsColumnHk;
     private final String accountsColumnUk;
@@ -77,11 +78,12 @@ final class EditDialog extends Dialog {
     private Runnable hauptkontoValueChangeTask;
 
     @SuppressWarnings("unchecked")
-    public EditDialog(Table tableOptigemAccounts, String accountsColumnHk, String accountsColumnUk, String accountsColumnBez,
-        Table tableOptigemProjects, String projectsColumnNr, String projectsColumnBez,
+    public EditDialog(OptigemSpoonfeederProperties.AccountProperties accountProperties, Table tableOptigemAccounts, String accountsColumnHk,
+        String accountsColumnUk, String accountsColumnBez, Table tableOptigemProjects, String projectsColumnNr, String projectsColumnBez,
         String tablePersons, String personsColumnNr, String personsColumnIban, String personsColumnVorname, String personsColumnNachname,
         String accountsHkForPersons,
-        RuleResult rr, Runnable updateTableRow, PersistenceService persistenceService) {
+        RuleResult rr, Runnable updateTableRow, PersistenceService persistenceService, PersonService personService) {
+        this.accountProperties = accountProperties;
         this.tableOptigemAccounts = tableOptigemAccounts;
         this.accountsColumnHk = accountsColumnHk;
         this.accountsColumnUk = accountsColumnUk;
@@ -90,6 +92,10 @@ final class EditDialog extends Dialog {
         this.projectsColumnNr = projectsColumnNr;
         this.projectsColumnBez = projectsColumnBez;
         this.rr = rr;
+
+        if (accountProperties == null) {
+            throw new IllegalArgumentException("kein Bankkonto angegeben");
+        }
 
         setWidth("65%");
         setResizable(true);
@@ -302,11 +308,6 @@ final class EditDialog extends Dialog {
                 return;
             }
 
-            if (tableOptigemAccounts == null) {
-                MessageDialog.show("Fehler", "keine Konto-Tabelle konfiguriert");
-                return;
-            }
-
             Table persons = persistenceService.getTable(tablePersons);
             String iban = rr.getInput().getKontoNummer();
             if (persons.contains(personsColumnIban, iban)) {
@@ -332,42 +333,9 @@ final class EditDialog extends Dialog {
                 nachname = rr.getInput().getName().trim();
             }
 
-            TableRow lastExistingPersonAccount = tableOptigemAccounts.getRows().stream()
-                .filter(r -> Objects.equals(r.get(accountsColumnHk), accountsHkForPersons))
-                .max(Comparator.comparing(tr -> tr.get(accountsColumnUk)))
-                .orElse(null);
-            if (lastExistingPersonAccount == null) {
-                MessageDialog.show("Fehler", "kein personenbezogenes Unterkonto zu HK " + accountsHkForPersons + " gefunden");
-                return;
-            }
-
-            int nextUnterkontoNummer = Integer.parseInt(lastExistingPersonAccount.get(accountsColumnUk)) + 1;
-            if (nextPersonNummer < nextUnterkontoNummer) {
-                nextPersonNummer = nextUnterkontoNummer;
-            } else if (nextPersonNummer > nextUnterkontoNummer) {
-                nextUnterkontoNummer = nextPersonNummer;
-            }
-            TableRow newPersonAccount = lastExistingPersonAccount.copy()
-                .with(accountsColumnUk, String.valueOf(nextUnterkontoNummer))
-                .with(accountsColumnBez, vorname + " " + nachname);
-            tableOptigemAccounts.add(newPersonAccount);
-            tableOptigemAccounts.sortBy(accountsColumnHk, accountsColumnUk);
-
-            persons.add(new TableRow()
-                .with(personsColumnNr, String.valueOf(nextPersonNummer))
-                .with(personsColumnIban, iban)
-                .with(personsColumnVorname, vorname)
-                .with(personsColumnNachname, nachname));
-            persons.sortBy(personsColumnNachname, personsColumnVorname);
-
-            persistenceService.write(tableOptigemAccounts);
-            persistenceService.write(persons);
-
-            IdAndName selectedUnterkonto = unterkontoComboBox.getValue();
-            fillUnterkontoComboBox(unterkontoComboBox, hauptkontoComboBox);
-            unterkontoComboBox.setValue(selectedUnterkonto);
-
-            MessageDialog.show("Erfolg", "Person und Unterkonto hinzugefügt: " + vorname + " " + nachname + "\n\nNummer: " + nextPersonNummer);
+            PersonDialog personDialog = new PersonDialog(accountProperties, tableOptigemAccounts, personService, nextPersonNummer,
+                vorname, nachname, iban);
+            personDialog.open();
         });
         addPerson.setTooltipText("Person und IBAN in Tabelle hinzufügen");
         Button addBuchung = new Button("Buchung hinzufügen", event -> {

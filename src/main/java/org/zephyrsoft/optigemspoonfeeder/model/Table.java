@@ -6,10 +6,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang3.math.NumberUtils;
+
 import lombok.Getter;
 
 @Getter
 public class Table {
+	private static final Comparator<String> COMPARE_AS_NUMBERS_IF_POSSIBLE = (s1, s2) -> {
+		if (NumberUtils.isDigits(s1) && NumberUtils.isDigits(s2)) {
+			return Comparator.<Integer>naturalOrder().compare(Integer.valueOf(s1), Integer.valueOf(s2));
+		} else {
+			return Comparator.<String>naturalOrder().compare(s1, s2);
+		}
+	};
+
 	private final String name;
 	private final String filename;
 	private final List<TableRow> rows = new ArrayList<>();
@@ -80,16 +90,12 @@ public class Table {
 	}
 
 	public void sortBy(String... columnNames) {
-		if (columnNames.length == 1) {
-			rows.sort(Comparator.comparing(r -> r.get(columnNames[0]), Comparator.nullsFirst(Comparator.naturalOrder())));
-		} else if (columnNames.length > 1) {
-			Comparator<TableRow> comp = Comparator.comparing(r -> r.get(columnNames[0]), Comparator.nullsFirst(Comparator.naturalOrder()));
-			for (int i = 1; i < columnNames.length; i++) {
-				int index = i;
-				comp = comp.thenComparing(r -> r.get(columnNames[index]), Comparator.nullsFirst(Comparator.naturalOrder()));
-			}
-			rows.sort(comp);
+		Comparator<TableRow> comp = Comparator.comparing(r -> r.get(columnNames[0]), Comparator.nullsFirst(COMPARE_AS_NUMBERS_IF_POSSIBLE));
+		for (int i = 1; i < columnNames.length; i++) {
+			int index = i;
+			comp = comp.thenComparing(r -> r.get(columnNames[index]), Comparator.nullsFirst(COMPARE_AS_NUMBERS_IF_POSSIBLE));
 		}
+		rows.sort(comp);
 	}
 
 	@Override

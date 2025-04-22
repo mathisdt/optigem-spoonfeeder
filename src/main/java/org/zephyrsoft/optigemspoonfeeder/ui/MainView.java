@@ -23,6 +23,7 @@ import org.zephyrsoft.optigemspoonfeeder.service.ExportService;
 import org.zephyrsoft.optigemspoonfeeder.service.HibiscusImportService;
 import org.zephyrsoft.optigemspoonfeeder.service.ParseService;
 import org.zephyrsoft.optigemspoonfeeder.service.PersistenceService;
+import org.zephyrsoft.optigemspoonfeeder.service.PersonService;
 import org.zephyrsoft.optigemspoonfeeder.service.RuleService;
 import org.zephyrsoft.optigemspoonfeeder.source.SourceFile;
 
@@ -73,6 +74,7 @@ final class MainView extends VerticalLayout {
     private final RuleService ruleService;
     private final ExportService exportService;
     private final PersistenceService persistenceService;
+    private final PersonService personService;
 
     private String timestamp;
     private SourceFile parsed;
@@ -111,11 +113,12 @@ final class MainView extends VerticalLayout {
 
     MainView(ParseService parseService, RuleService ruleService, ExportService exportService,
         HibiscusImportService hibiscusImportService, PersistenceService persistenceService,
-        OptigemSpoonfeederProperties properties) {
+        PersonService personService, OptigemSpoonfeederProperties properties) {
         this.parseService = parseService;
         this.ruleService = ruleService;
         this.exportService = exportService;
         this.persistenceService = persistenceService;
+        this.personService = personService;
         this.properties = properties;
 
         setSizeFull();
@@ -486,13 +489,13 @@ final class MainView extends VerticalLayout {
             .addComponentColumn(rr -> {
                 Button button = new Button(new Icon(VaadinIcon.EDIT));
                 button.addClickListener(e -> {
-                    EditDialog editDialog = new EditDialog(tableOptigemAccounts, accountsColumnHk, accountsColumnUk, accountsColumnBez,
-                        tableOptigemProjects, projectsColumnNr, projectsColumnBez,
+                    EditDialog editDialog = new EditDialog(properties.getBankAccount().get(parsedAccount.getIban()), tableOptigemAccounts,
+                        accountsColumnHk, accountsColumnUk, accountsColumnBez, tableOptigemProjects, projectsColumnNr, projectsColumnBez,
                         tablePersons, personsColumnNr, personsColumnIban, personsColumnVorname, personsColumnNachname,
                         accountsHkForPersons, rr, () -> {
                             grid.getDataProvider().refreshItem(rr);
                             updateFooter();
-                        }, persistenceService);
+                        }, persistenceService, personService);
                     editDialog.open();
                 });
                 return button;
