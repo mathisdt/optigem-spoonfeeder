@@ -613,7 +613,7 @@ final class MainView extends VerticalLayout {
                 layout.setPadding(false);
                 layout.setSizeFull();
                 for (Buchung b : rr.getResult()) {
-                    String buchungstext = b.getBuchungstext();
+                    String buchungstext = nonNull(b.getBuchungstext());
                     Span span = new Span(buchungstext);
                     span.setTitle(buchungstext);
                     span.addClassName("absolute-height");
