@@ -45,6 +45,11 @@ public class OptigemSpoonfeederProperties {
 		private String personsColumnVorname = "Vorname";
 		private String personsColumnNachname = "Nachname";
 		private String accountsHkForPersons = "8010";
+		private String paypalBaseUrl = "https://api-m.paypal.com";
+		private String paypalAuthEndpoint = "/v1/oauth2/token";
+		private String paypalClientId;
+		private String paypalClientSecret;
+		private int paypalDaysBefore = 6;
 	}
 
 	public AccountProperties getBankAccountByDescription(final String description) {

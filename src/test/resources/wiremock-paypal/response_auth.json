@@ -1,0 +1,8 @@
+{
+  "scope": "openid Braintree:Vault https://uri.paypal.com/services/reporting/search/read",
+  "access_token": "tV8zDM1vEzQs2J6WA1UVUkcIPjWg4NzwLLZQUIl8DPIdb2uf_12AATy3J0G-hn8gwrHRAzh-e13ZNVhDRcgf1eJ4-G28FXiDS",
+  "token_type": "Bearer",
+  "app_id": "APP-0T681460TV2719130",
+  "expires_in": 29807,
+  "nonce": "2025-06-07T10:00:00ZfpoAdZ4DiqrQoEfa_GBqRe4pUxV8NrjQ3gViyw56eY0"
+}

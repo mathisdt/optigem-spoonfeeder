@@ -24,6 +24,8 @@
         <xmlrpc-client.version>3.1.3</xmlrpc-client.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <maven-failsafe-plugin.version>3.5.3</maven-failsafe-plugin.version>
+        <openapi-generator.version>7.13.0</openapi-generator.version>
+        <wiremock.version>3.13.0</wiremock.version>
     </properties>
     <dependencies>
         <dependency>
@@ -73,6 +75,13 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-jetty12</artifactId>
+            <version>${wiremock.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <dependencyManagement>
@@ -139,6 +148,34 @@
                         <goals>
                             <goal>parse-version</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi-generator.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/paypal-api/reporting_transactions_v1+RP.json</inputSpec>
+                            <apiPackage>org.zephyrsoft.optigemspoonfeeder.paypal.api</apiPackage>
+                            <modelPackage>org.zephyrsoft.optigemspoonfeeder.paypal.model</modelPackage>
+                            <invokerPackage>org.zephyrsoft.optigemspoonfeeder.paypal.client</invokerPackage>
+                            <library>restclient</library>
+                            <generatorName>java</generatorName>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <configOptions>
+                                <sourceFolder>src/gen/java/main</sourceFolder>
+                                <openApiNullable>false</openApiNullable>
+                                <dateLibrary>java8</dateLibrary>
+                            </configOptions>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

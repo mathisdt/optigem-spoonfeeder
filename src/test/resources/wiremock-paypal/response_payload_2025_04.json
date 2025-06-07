@@ -1,0 +1,125 @@
+{
+  "transaction_details": [
+    {
+      "transaction_info": {
+        "paypal_account_id": "1FJS3J5F5DAUN",
+        "transaction_id": "8YR59669971602924",
+        "paypal_reference_id": "61R67591DA215821N",
+        "paypal_reference_id_type": "TXN",
+        "transaction_event_code": "T0013",
+        "transaction_initiation_date": "2025-04-27T18:30:00+0000",
+        "transaction_updated_date": "2025-04-27T18:30:00+0000",
+        "transaction_amount": {
+          "currency_code": "EUR",
+          "value": "10.51"
+        },
+        "fee_amount": {
+          "currency_code": "EUR",
+          "value": "-0.51"
+        },
+        "transaction_status": "S",
+        "transaction_note": "Testveranstaltung 2025-04",
+        "ending_balance": {
+          "currency_code": "EUR",
+          "value": "10.00"
+        },
+        "available_balance": {
+          "currency_code": "EUR",
+          "value": "10.00"
+        },
+        "protection_eligibility": "01",
+        "instrument_type": "Direct Debit"
+      },
+      "payer_info": {
+        "account_id": "1FJS3J5F5DAUN",
+        "email_address": "test.person@example.com",
+        "address_status": "N",
+        "payer_status": "Y",
+        "payer_name": {
+          "given_name": "Test",
+          "surname": "Person",
+          "alternate_full_name": "Test Person"
+        },
+        "country_code": "DE"
+      },
+      "shipping_info": {
+        "name": "Person, Test",
+        "address": {
+          "line1": "Teststraße 1",
+          "city": "Hannover",
+          "country_code": "DE",
+          "postal_code": "30159"
+        }
+      },
+      "cart_info": {
+        "item_details": [
+          {
+            "item_quantity": "1",
+            "item_unit_price": {
+              "currency_code": "EUR",
+              "value": "10.51"
+            },
+            "item_amount": {
+              "currency_code": "EUR",
+              "value": "10.51"
+            },
+            "total_item_amount": {
+              "currency_code": "EUR",
+              "value": "10.51"
+            }
+          }
+        ]
+      },
+      "store_info": {},
+      "auction_info": {},
+      "incentive_info": {}
+    },
+    {
+      "transaction_info": {
+        "transaction_id": "1Y221410AF127681X",
+        "transaction_event_code": "T0400",
+        "transaction_initiation_date": "2025-04-27T23:00:00+0000",
+        "transaction_updated_date": "2025-04-27T23:00:00+0000",
+        "transaction_amount": {
+          "currency_code": "EUR",
+          "value": "-10.00"
+        },
+        "transaction_status": "S",
+        "bank_reference_id": "YYW2815819013200",
+        "ending_balance": {
+          "currency_code": "EUR",
+          "value": "0.00"
+        },
+        "available_balance": {
+          "currency_code": "EUR",
+          "value": "0.00"
+        },
+        "protection_eligibility": "02",
+        "instrument_type": "Direct Debit"
+      },
+      "payer_info": {
+        "address_status": "N",
+        "payer_name": {}
+      },
+      "shipping_info": {},
+      "cart_info": {},
+      "store_info": {},
+      "auction_info": {},
+      "incentive_info": {}
+    }
+  ],
+  "account_number": "GA4SERBCQ4AC8",
+  "start_date": "2025-04-24T22:00:00+0000",
+  "end_date": "2025-04-30T22:00:00+0000",
+  "last_refreshed_datetime": "2025-06-07T08:00:00+0000",
+  "page": 1,
+  "total_items": 2,
+  "total_pages": 1,
+  "links": [
+    {
+      "href": "https://api.paypal.com/v1/reporting/transactions?start_date=2025-04-25T00%3A00%3A00%2B0200&end_date=2025-05-01T00%3A00%3A00%2B0200&fields=all&page_size=100&page=1",
+      "rel": "self",
+      "method": "GET"
+    }
+  ]
+}
