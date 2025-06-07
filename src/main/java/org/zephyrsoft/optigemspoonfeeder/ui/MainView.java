@@ -76,6 +76,7 @@ final class MainView extends VerticalLayout {
     private final PersistenceService persistenceService;
     private final PersonService personService;
 
+    private List<Konto> konten;
     private String timestamp;
     private SourceFile parsed;
     private Konto parsedAccount;
@@ -140,7 +141,7 @@ final class MainView extends VerticalLayout {
         ComboBox<Konto> account = new ComboBox<>();
         account.setWidthFull();
         if (hibiscusConfiguredAndReachable) {
-            List<Konto> konten = hibiscusImportService.getKonten();
+            konten = hibiscusImportService.getKonten();
             account.setItems(konten);
             if (!konten.isEmpty()) {
                 account.setValue(konten.get(0));
@@ -405,6 +406,13 @@ final class MainView extends VerticalLayout {
             logArea.setText(accountMonth.getLabel() +" geladen\n" + result.getLogMessages());
             updateFooter();
             loadedMonth = accountMonth;
+            if (konten != null && !konten.isEmpty()) {
+                for (Konto k : konten) {
+                    if (k.getBezeichnung().equals(accountMonth.getAccount())) {
+                        parsedAccount = k;
+                    }
+                }
+            }
             originalFilename = accountMonth.getAccountForFilename() + "_" + MONTH_FORMAT.format(accountMonth.getYearMonth()) + ".hibiscus";
             timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
             updateDownloadButtons();
