@@ -281,6 +281,7 @@ final class MainView extends VerticalLayout {
             timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
             parsedAccount = account.getValue();
             parsed = hibiscusImportService.read(month.getValue(), account.getValue());
+            result = null;
             loadedMonth = new AccountMonth(account.getValue().getBezeichnung(), month.getValue());
         } catch (Exception e) {
             logText.setText("Fehler: " + e.getMessage());
@@ -363,6 +364,7 @@ final class MainView extends VerticalLayout {
             originalFilename = filename;
             timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
             parsed = parseService.parse(inputStream);
+            result = null;
             loadedMonth = new AccountMonth(parsed.getEntries().getFirst().getKontobezeichnung(), YearMonth.from(parsed.getEntries().getFirst().getValutaDatum()));
         } catch (Exception e) {
             logText.setText("Fehler: " + e.getMessage());
