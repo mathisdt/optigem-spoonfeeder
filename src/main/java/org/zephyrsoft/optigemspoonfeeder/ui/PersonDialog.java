@@ -1,5 +1,6 @@
 package org.zephyrsoft.optigemspoonfeeder.ui;
 
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,7 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 final class PersonDialog extends Dialog {
 
     public PersonDialog(OptigemSpoonfeederProperties.AccountProperties accountProperties, Table tableOptigemAccounts,
-        PersonService personService, int initialNummer, String vorname, String nachname, String iban) {
+        PersonService personService, int initialNummer, String vorname, String nachname, String iban,
+        Consumer<Integer> thisNumberWasCreated) {
         setWidth("65%");
         setResizable(true);
         setDraggable(true);
@@ -72,6 +74,7 @@ final class PersonDialog extends Dialog {
                 MessageDialog.show("Person angelegt",
                     "Person \"" + Stream.of(vornameField.getValue(), nachnameField.getValue()).filter(StringUtils::isNotBlank)
                         .collect(Collectors.joining(" ")) + "\" mit Nummer " + createdNumber + " angelegt.");
+                thisNumberWasCreated.accept(createdNumber);
                 close();
             } catch (Exception ex) {
                 MessageDialog.show("Fehler", ex.getMessage());

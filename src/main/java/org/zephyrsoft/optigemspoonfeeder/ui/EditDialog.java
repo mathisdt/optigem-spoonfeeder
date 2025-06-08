@@ -343,7 +343,19 @@ final class EditDialog extends Dialog {
             }
 
             PersonDialog personDialog = new PersonDialog(accountProperties, tableOptigemAccounts, personService, nextPersonNummer,
-                vorname, nachname, iban);
+                vorname, nachname, iban,
+                newPersonNumber -> {
+                    if (newPersonNumber != null) {
+                        // update data
+                        fillUnterkontoComboBox(unterkontoComboBox, hauptkontoComboBox);
+                        setCalculatedComboboxDropdownWidth(unterkontoComboBox);
+                        // select newly created entry
+                        unterkontoComboBox.getListDataView().getItems()
+                            .filter(element -> element.getId() == newPersonNumber)
+                            .findAny()
+                            .ifPresent(unterkontoComboBox::setValue);
+                    }
+                });
             personDialog.open();
         });
         addPerson.setTooltipText("Person und IBAN in Tabelle hinzufügen");
