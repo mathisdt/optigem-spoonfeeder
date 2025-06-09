@@ -40,3 +40,8 @@ vaadin-grid::part(yellow) {
 .absolute-height {
     height: 42px;
 }
+
+.codefont {
+	font-family: monospace;
+	font-size: smaller;
+}

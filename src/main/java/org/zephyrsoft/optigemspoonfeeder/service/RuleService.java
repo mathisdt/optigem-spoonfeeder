@@ -1,7 +1,11 @@
 package org.zephyrsoft.optigemspoonfeeder.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.helpers.MessageFormatter;
 import org.springframework.stereotype.Service;
@@ -23,6 +27,20 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class RuleService {
+
+    private static final String PREPENDED_SCRIPT_PART = """
+        import org.zephyrsoft.optigemspoonfeeder.model.*
+        def log(String msg, Object... args) {
+          logWrapper.log(msg, args)
+        }
+        static def buchung(Object hauptkonto, Object unterkonto = null, Object projekt = null, Object buchungstext = null) {
+          return new Buchung(hauptkonto, unterkonto, projekt, buchungstext)
+        }
+        """;
+    private static final long PREPENDED_SCRIPT_PART_LINES = PREPENDED_SCRIPT_PART.lines().count();
+    private static Pattern LINE_PATTERN_1 = Pattern.compile("Script1.groovy: ([0-9]+):");
+    private static Pattern LINE_PATTERN_2 = Pattern.compile("@ line ([0-9]+),");
+
     private static class LogWrapper {
         private final StringBuilder memory = new StringBuilder();
 
@@ -41,6 +59,45 @@ public class RuleService {
     }
 
     private final PersistenceService persistenceService;
+
+    /**
+     * @return error message - or {@code null} if validation successful
+     */
+    public String validateRules(String rules) {
+        try {
+            Binding sharedData = new Binding();
+            sharedData.setProperty("eigenkonto", new SearchableString("12345678"));
+            sharedData.setProperty("datum", LocalDate.of(2025, 4, 15));
+            sharedData.setProperty("soll", false);
+            sharedData.setProperty("haben", true);
+            sharedData.setProperty("betrag", BigDecimal.valueOf(25));
+            sharedData.setProperty("buchungstext", new SearchableString("Dauerauftrag"));
+            sharedData.setProperty("verwendungszweck", new SearchableString("Spende 123"));
+            sharedData.setProperty("bank", new SearchableString("BANK_BIC"));
+            sharedData.setProperty("konto", new SearchableString("DE123456789123456789"));
+            sharedData.setProperty("name", new SearchableString("Name der Person"));
+
+            Script parsed = createScript(sharedData, rules);
+
+            parsed.run();
+
+            return null;
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            long lineNumber = -1;
+            Matcher matcher1 = LINE_PATTERN_1.matcher(msg);
+            if (matcher1.find()) {
+                lineNumber = Long.parseLong(matcher1.group(1)) - PREPENDED_SCRIPT_PART_LINES;
+                msg = msg.substring(0, matcher1.start(1)) + lineNumber + msg.substring(matcher1.end(1));
+            }
+            Matcher matcher2 = LINE_PATTERN_2.matcher(msg);
+            if (matcher2.find()) {
+                lineNumber = Long.parseLong(matcher2.group(1)) - PREPENDED_SCRIPT_PART_LINES;
+                msg = msg.substring(0, matcher2.start(1)) + lineNumber + msg.substring(matcher2.end(1));
+            }
+            return msg;
+        }
+    }
 
     public RulesResult apply(RulesResult previousResults) {
         Binding sharedData = new Binding();
@@ -100,18 +157,14 @@ public class RuleService {
 
     private Script createScript(final Binding sharedData) {
         String rules = persistenceService.getRules();
+        return createScript(sharedData, rules);
+    }
+
+    private Script createScript(final Binding sharedData, final String rules) {
         List<Table> tables = persistenceService.getTables();
 
         GroovyShell shell = new GroovyShell(sharedData);
-        Script parsed = shell.parse("""
-            import org.zephyrsoft.optigemspoonfeeder.model.*
-            def log(String msg, Object... args) {
-              logWrapper.log(msg, args)
-            }
-            static def buchung(Object hauptkonto, Object unterkonto = null, Object projekt = null, Object buchungstext = null) {
-              return new Buchung(hauptkonto, unterkonto, projekt, buchungstext)
-            }
-            """ + rules);
+        Script parsed = shell.parse(PREPENDED_SCRIPT_PART + rules);
 
         for (Table table : tables) {
             sharedData.setProperty(table.getName(), table);

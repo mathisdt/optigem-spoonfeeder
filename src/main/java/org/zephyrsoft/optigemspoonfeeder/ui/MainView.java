@@ -124,6 +124,9 @@ final class MainView extends VerticalLayout {
 
         setSizeFull();
 
+        Button editRules = new Button("Regeln anpassen");
+        editRules.addClickListener(e -> new RuleEditor(persistenceService).open());
+
         Button reapplyRules = new Button("Regeln erneut anwenden");
         reapplyRules.addClickListener(e -> loadTablesAndApplyRules(properties, parsedAccount));
         reapplyRules.setEnabled(false);
@@ -205,7 +208,7 @@ final class MainView extends VerticalLayout {
         Scroller scroller = new Scroller(logArea);
         scroller.setSizeFull();
 
-        HorizontalLayout topLeft = new HorizontalLayout(upload, month, account, loadFromHibiscusServerButton, reapplyRules, save, monthToLoad, load);
+        HorizontalLayout topLeft = new HorizontalLayout(upload, month, account, loadFromHibiscusServerButton, editRules, reapplyRules, save, monthToLoad, load);
         topLeft.setPadding(false);
         HorizontalLayout top = new HorizontalLayout(topLeft, scroller);
         top.setWidthFull();

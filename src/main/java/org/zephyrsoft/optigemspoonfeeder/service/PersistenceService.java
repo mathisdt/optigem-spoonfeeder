@@ -3,9 +3,15 @@ package org.zephyrsoft.optigemspoonfeeder.service;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
@@ -61,6 +67,7 @@ public class PersistenceService {
 
 	private static final String RULES_FILENAME = "rules.groovy";
 	private static final String DATA_SUBDIR = "saved-months";
+	private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
 
 	private final OptigemSpoonfeederProperties properties;
 
@@ -82,6 +89,15 @@ public class PersistenceService {
 		} catch (IOException e) {
 			throw new IllegalStateException("could not read rules from " + properties.getDir() + "/" + RULES_FILENAME, e);
 		}
+	}
+
+	public void saveRules(String rules) throws IOException {
+		Path rulesFile = properties.getDir().resolve(RULES_FILENAME);
+		Path rulesBackup = properties.getDir()
+			.resolve(RULES_FILENAME + ".backup-" + TIMESTAMP.format(LocalDateTime.now().minusSeconds(1)));
+		Files.copy(rulesFile, rulesBackup, StandardCopyOption.REPLACE_EXISTING);
+
+		Files.writeString(rulesFile, rules, StandardOpenOption.TRUNCATE_EXISTING);
 	}
 
 	public List<Table> getTables() {

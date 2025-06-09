@@ -1,10 +1,12 @@
 package org.zephyrsoft.optigemspoonfeeder.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.LineNumberReader;
 import java.util.List;
 import java.util.Objects;
@@ -19,11 +21,33 @@ import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.source.SourceFile;
 import org.zephyrsoft.optigemspoonfeeder.source.parser.Mt940Parser;
 
+import groovy.lang.GroovyRuntimeException;
+
 @SpringBootTest(properties = { "org.zephyrsoft.optigem-spoonfeeder.dir=src/test/resources/basedata" })
 class RuleServiceIT {
 
 	@Autowired
 	RuleService service;
+
+	@Test
+	void validate() {
+		// the always prepended code works
+		assertThat(service.validateRules(""))
+			.isNull();
+
+		// catch basic compilation errors
+		assertThat(service.validateRules("if (true) { }"))
+			.isNull();
+		assertThat(service.validateRules("if (true { noClosingBrace(); }"))
+			.contains("startup failed",
+				"Script1.groovy: 1: Unexpected input: '{ noClosingBrace(); }' @ line 1, column 31.");
+
+		// catch nonexistent method calls
+		assertThat(service.validateRules("return buchung(1000);"))
+			.isNull();
+		assertThat(service.validateRules("nonexistentMethod();"))
+			.contains("No signature of method: Script1.nonexistentMethod() is applicable for argument types: () values: []");
+	}
 
 	@Test
 	void apply() throws Exception {
