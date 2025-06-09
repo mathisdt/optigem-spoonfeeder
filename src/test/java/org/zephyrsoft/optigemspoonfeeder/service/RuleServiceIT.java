@@ -32,21 +32,21 @@ class RuleServiceIT {
 	@Test
 	void validate() {
 		// the always prepended code works
-		assertThat(service.validateRules(""))
-			.isNull();
+		assertThat(service.validateRules("").isError())
+			.isFalse();
 
 		// catch basic compilation errors
-		assertThat(service.validateRules("if (true) { }"))
-			.isNull();
+		assertThat(service.validateRules("if (true) { }").isError())
+			.isFalse();
 		assertThat(service.validateRules("if (true { noClosingBrace(); }"))
-			.contains("startup failed",
-				"Script1.groovy: 1: Unexpected input: '{ noClosingBrace(); }' @ line 1, column 31.");
+			.matches(rvr -> rvr.getErrorMessage().contains("startup failed")
+				&& rvr.getErrorMessage().contains("Script1.groovy: 1: Unexpected input: '{ noClosingBrace(); }' @ line 1, column 31."));
 
 		// catch nonexistent method calls
-		assertThat(service.validateRules("return buchung(1000);"))
-			.isNull();
+		assertThat(service.validateRules("return buchung(1000);").isError())
+			.isFalse();
 		assertThat(service.validateRules("nonexistentMethod();"))
-			.contains("No signature of method: Script1.nonexistentMethod() is applicable for argument types: () values: []");
+			.matches(rvr -> rvr.getErrorMessage().contains("No signature of method: Script1.nonexistentMethod() is applicable for argument types: () values: []"));
 	}
 
 	@Test

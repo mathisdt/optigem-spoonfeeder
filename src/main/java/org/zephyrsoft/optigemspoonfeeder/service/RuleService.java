@@ -11,6 +11,7 @@ import org.slf4j.helpers.MessageFormatter;
 import org.springframework.stereotype.Service;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
+import org.zephyrsoft.optigemspoonfeeder.model.RuleValidationResult;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.model.SearchableString;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
@@ -63,7 +64,7 @@ public class RuleService {
     /**
      * @return error message - or {@code null} if validation successful
      */
-    public String validateRules(String rules) {
+    public RuleValidationResult validateRules(String rules) {
         try {
             Binding sharedData = new Binding();
             sharedData.setProperty("eigenkonto", new SearchableString("12345678"));
@@ -81,7 +82,7 @@ public class RuleService {
 
             parsed.run();
 
-            return null;
+            return new RuleValidationResult();
         } catch (Exception e) {
             String msg = e.getMessage();
             long lineNumber = -1;
@@ -95,7 +96,11 @@ public class RuleService {
                 lineNumber = Long.parseLong(matcher2.group(1)) - PREPENDED_SCRIPT_PART_LINES;
                 msg = msg.substring(0, matcher2.start(1)) + lineNumber + msg.substring(matcher2.end(1));
             }
-            return msg;
+            return RuleValidationResult.builder()
+                .error(true)
+                .errorLine(lineNumber)
+                .errorMessage(msg)
+                .build();
         }
     }
 

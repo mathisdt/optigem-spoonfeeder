@@ -125,7 +125,7 @@ final class MainView extends VerticalLayout {
         setSizeFull();
 
         Button editRules = new Button("Regeln anpassen");
-        editRules.addClickListener(e -> new RuleEditor(persistenceService).open());
+        editRules.addClickListener(e -> new RuleEditor(ruleService, persistenceService).open());
 
         Button reapplyRules = new Button("Regeln erneut anwenden");
         reapplyRules.addClickListener(e -> loadTablesAndApplyRules(properties, parsedAccount));

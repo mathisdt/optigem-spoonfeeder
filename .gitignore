@@ -7,6 +7,8 @@ application-local.yaml
 application-local.yml
 /frontend
 /src/main/dev-bundle
+/src/main/bundles
+/src/main/frontend
 /package.json
 /package-lock.json
 /types.d.ts
