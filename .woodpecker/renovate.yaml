@@ -1,0 +1,26 @@
+when:
+  - event: [ cron, manual ]
+
+clone:
+  - name: clone
+    image: woodpeckerci/plugin-git
+    settings:
+      depth: 0
+      partial: false
+      recursive: true
+
+steps:
+  - name: renovate
+    when:
+      - event: cron
+        cron: "renovate"
+      - event: manual
+    depends_on: []
+    image: renovate/renovate
+    commands: |
+      renovate $${CI_REPO}
+    environment:
+      RENOVATE_PLATFORM: forgejo
+      RENOVATE_ENDPOINT: https://codeberg.org
+      RENOVATE_TOKEN:
+        from_secret: RENOVATE_TOKEN
