@@ -13,7 +13,7 @@ steps:
   - name: renovate
     when:
       - event: cron
-        cron: "renovate"
+        cron: "renovate"  # a cron with this name has to exist in the Woodpecker repo, e.g. with expression "30 3 * * *"
       - event: manual
     depends_on: []
     image: renovate/renovate
@@ -24,5 +24,8 @@ steps:
       RENOVATE_ENDPOINT: https://codeberg.org
       RENOVATE_ONBOARDING: false
       RENOVATE_REQUIRE_CONFIG: optional
+      LOG_LEVEL: debug
       RENOVATE_TOKEN:
         from_secret: RENOVATE_TOKEN
+      GITHUB_COM_TOKEN:
+        from_secret: GITHUB_COM_TOKEN
