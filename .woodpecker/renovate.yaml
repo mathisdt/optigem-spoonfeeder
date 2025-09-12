@@ -22,5 +22,7 @@ steps:
     environment:
       RENOVATE_PLATFORM: forgejo
       RENOVATE_ENDPOINT: https://codeberg.org
+      RENOVATE_ONBOARDING: false
+      RENOVATE_REQUIRE_CONFIG: optional
       RENOVATE_TOKEN:
         from_secret: RENOVATE_TOKEN
