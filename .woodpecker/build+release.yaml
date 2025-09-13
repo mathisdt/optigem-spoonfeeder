@@ -31,7 +31,7 @@ steps:
     commands: |
       set -eu
       export TZ=Europe/Berlin
-      echo installing packages...
+      echo installing apt packages...
       apt-get update >/dev/null 2>&1
       apt-get -y install git curl jq >/dev/null 2>&1
       export release_timestamp=$(date '+%Y-%m-%d @ %H:%M')
@@ -67,6 +67,13 @@ steps:
                    --form attachment=@$FILE \
                    https://codeberg.org/api/v1/repos/$CI_REPO_OWNER/$CI_REPO_NAME/releases/$RELEASE_ID/assets?name=$BASEFILE
           done
+          echo UPDATING RELEASE to not appear as draft
+          export RELEASE=$(curl --silent \
+                                --header "Content-Type: application/json" \
+                                --header "Authorization: token $TOKEN_REPO_READWRITE" \
+                                --request PATCH \
+                                --data "{\"draft\": false}" \
+                                https://codeberg.org/api/v1/repos/$CI_REPO_OWNER/$CI_REPO_NAME/releases/$RELEASE_ID)
       else
           echo NO FILES GIVEN
       fi
