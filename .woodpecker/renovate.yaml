@@ -1,5 +1,5 @@
 when:
-  - event: [ cron, manual ]
+  - event: [ cron ]
 
 clone:
   - name: clone
@@ -14,7 +14,6 @@ steps:
     when:
       - event: cron
         cron: "renovate"  # a cron with this name has to exist in the Woodpecker repo, e.g. with expression "30 3 * * *"
-      - event: manual
     depends_on: []
     image: renovate/renovate
     commands: |
