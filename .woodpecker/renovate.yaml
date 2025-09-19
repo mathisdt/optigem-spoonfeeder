@@ -23,6 +23,9 @@ steps:
       RENOVATE_ENDPOINT: https://codeberg.org
       RENOVATE_ONBOARDING: false
       RENOVATE_REQUIRE_CONFIG: optional
+      RENOVATE_AUTO_APPROVE: true
+      RENOVATE_AUTOMERGE: true
+      RENOVATE_AUTOMERGE_STRATEGY: fast-forward
       LOG_LEVEL: debug
       RENOVATE_TOKEN:
         from_secret: RENOVATE_TOKEN
