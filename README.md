@@ -143,4 +143,6 @@ entsprechende Plugin installiert werden.
 
 ## Lizenz
 
-GPL v3
+Die Lizenz des Projekts ist GPL v3. Durch einreichen bzw. beitragen von Änderungen
+werden diese automatisch auch unter der GPL v3 lizensiert. Wenn das nicht gewünscht
+ist, bitte den Beitrag (z.B. Pull Request) nicht einreichen!
