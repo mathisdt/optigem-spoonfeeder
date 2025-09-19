@@ -7,7 +7,7 @@
         "paypal_reference_id": "61R67591DA215821N",
         "paypal_reference_id_type": "TXN",
         "transaction_event_code": "T0013",
-        "transaction_initiation_date": "2025-04-27T18:30:00+0000",
+        "transaction_initiation_date": "2025-04-27T18:30:00Z",
         "transaction_updated_date": "2025-04-27T18:30:00+0000",
         "transaction_amount": {
           "currency_code": "EUR",

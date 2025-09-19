@@ -1,5 +1,6 @@
 package org.zephyrsoft.optigemspoonfeeder.ui;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.time.LocalDate;
@@ -16,12 +17,14 @@ import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
 import org.zephyrsoft.optigemspoonfeeder.model.AccountMonth;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
 import org.zephyrsoft.optigemspoonfeeder.model.Konto;
+import org.zephyrsoft.optigemspoonfeeder.model.PaypalBooking;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
 import org.zephyrsoft.optigemspoonfeeder.service.ExportService;
 import org.zephyrsoft.optigemspoonfeeder.service.HibiscusImportService;
 import org.zephyrsoft.optigemspoonfeeder.service.ParseService;
+import org.zephyrsoft.optigemspoonfeeder.service.PaypalService;
 import org.zephyrsoft.optigemspoonfeeder.service.PersistenceService;
 import org.zephyrsoft.optigemspoonfeeder.service.PersonService;
 import org.zephyrsoft.optigemspoonfeeder.service.RuleService;
@@ -46,7 +49,6 @@ import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.UploadI18N;
 import com.vaadin.flow.component.upload.UploadI18N.Uploading;
 import com.vaadin.flow.component.upload.UploadI18N.Uploading.Status;
-import com.vaadin.flow.component.upload.receivers.MultiFileMemoryBuffer;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.renderer.LocalDateRenderer;
 import com.vaadin.flow.data.renderer.NumberRenderer;
@@ -54,7 +56,9 @@ import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.streams.DownloadHandler;
+import com.vaadin.flow.server.streams.DownloadResponse;
+import com.vaadin.flow.server.streams.UploadHandler;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -75,6 +79,7 @@ final class MainView extends VerticalLayout {
     private final ExportService exportService;
     private final PersistenceService persistenceService;
     private final PersonService personService;
+    private final PaypalService paypalService;
 
     private List<Konto> konten;
     private String timestamp;
@@ -96,6 +101,7 @@ final class MainView extends VerticalLayout {
     private AccountMonth loadedMonth;
     private String originalFilename;
     private RulesResult result;
+    private List<PaypalBooking> paypalBookings;
 
     private final Div logArea;
     private final Grid<RuleResult> grid;
@@ -114,12 +120,13 @@ final class MainView extends VerticalLayout {
 
     MainView(ParseService parseService, RuleService ruleService, ExportService exportService,
         HibiscusImportService hibiscusImportService, PersistenceService persistenceService,
-        PersonService personService, OptigemSpoonfeederProperties properties) {
+        PersonService personService, PaypalService paypalService, OptigemSpoonfeederProperties properties) {
         this.parseService = parseService;
         this.ruleService = ruleService;
         this.exportService = exportService;
         this.persistenceService = persistenceService;
         this.personService = personService;
+        this.paypalService = paypalService;
         this.properties = properties;
 
         setSizeFull();
@@ -161,8 +168,20 @@ final class MainView extends VerticalLayout {
             });
         loadFromHibiscusServerButton.setEnabled(hibiscusConfiguredAndReachable);
 
-        MultiFileMemoryBuffer buffer = new MultiFileMemoryBuffer();
-        Upload upload = new Upload(buffer);
+        UploadHandler uploadHandler = UploadHandler.inMemory((metadata, bytes) -> {
+            parseUploadedFile(new ByteArrayInputStream(bytes), metadata.fileName());
+            applyRulesToParsedData();
+            if (!result.getResults().isEmpty()) {
+                String konto = result.getResults().get(0).getInput().getKontobezeichnung();
+                OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getBankAccount().get(konto);
+                if (accountProperties == null) {
+                    accountProperties = properties.getBankAccountByDescription(konto);
+                }
+                interpretAccountProperties(accountProperties);
+            }
+            reapplyRules.setEnabled(true);
+        });
+        Upload upload = new Upload(uploadHandler);
         Button uploadButton = new Button("MT940-Datei einlesen");
         upload.setUploadButton(uploadButton);
         UploadI18N uploadI18N = new UploadI18N();
@@ -175,19 +194,6 @@ final class MainView extends VerticalLayout {
         upload.setMaxFiles(1);
         upload.setDropAllowed(false);
         upload.setWidthFull();
-        upload.addSucceededListener(event -> {
-            parseUploadedFile(buffer.getInputStream(event.getFileName()), event.getFileName());
-            applyRulesToParsedData();
-            if (!result.getResults().isEmpty()) {
-                String konto = result.getResults().get(0).getInput().getKontobezeichnung();
-                OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getBankAccount().get(konto);
-                if (accountProperties == null) {
-                    accountProperties = properties.getBankAccountByDescription(konto);
-                }
-                interpretAccountProperties(accountProperties);
-            }
-            reapplyRules.setEnabled(true);
-        });
 
         load = new Button("Laden");
 
@@ -273,6 +279,8 @@ final class MainView extends VerticalLayout {
             personsColumnNachname = accountProperties.getPersonsColumnNachname();
 
             accountsHkForPersons = accountProperties.getAccountsHkForPersons();
+
+            paypalBookings = paypalService.getBookings(accountProperties, loadedMonth.getYearMonth());
         }
     }
 
@@ -284,6 +292,7 @@ final class MainView extends VerticalLayout {
             timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
             parsedAccount = account.getValue();
             parsed = hibiscusImportService.read(month.getValue(), account.getValue());
+            paypalBookings = null;
             result = null;
             loadedMonth = new AccountMonth(account.getValue().getBezeichnung(), month.getValue());
         } catch (Exception e) {
@@ -340,19 +349,25 @@ final class MainView extends VerticalLayout {
     private void updateDownloadButtons() {
         buttons.removeAll();
 
-        StreamResource streamBuchungen = new StreamResource(
-            PATTERN.matcher(originalFilename).replaceFirst("") + "_Stand_" + timestamp + "_buchungen.xlsx",
-            () -> exportService.createBuchungenExport(result.getResults()));
-        downloadBuchungen = new Anchor(streamBuchungen, "");
+        DownloadHandler handlerBuchungen = DownloadHandler.fromInputStream(event -> {
+                return new DownloadResponse(exportService.createBuchungenExport(result.getResults()),
+                    PATTERN.matcher(originalFilename).replaceFirst("") + "_Stand_" + timestamp + "_buchungen.xlsx",
+                    null,
+                    -1);
+        });
+        downloadBuchungen = new Anchor(handlerBuchungen, "");
         downloadBuchungen.getElement().setAttribute("download", true);
         // hack to make it look like a button:
         downloadBuchungen.removeAll();
         downloadBuchungen.add(new Button("Buchungen", new Icon(VaadinIcon.DOWNLOAD)));
 
-        StreamResource streamRestMt940 = new StreamResource(
-            PATTERN.matcher(originalFilename).replaceFirst("") + "_Stand_" + timestamp + "_rest.sta",
-            () -> ExportService.createMt940Export(result.getResults()));
-        downloadRestMt940 = new Anchor(streamRestMt940, "");
+        DownloadHandler handlerRestMt940 = DownloadHandler.fromInputStream(event -> {
+            return new DownloadResponse(ExportService.createMt940Export(result.getResults()),
+                PATTERN.matcher(originalFilename).replaceFirst("") + "_Stand_" + timestamp + "_rest.sta",
+                null,
+                -1);
+        });
+        downloadRestMt940 = new Anchor(handlerRestMt940, "");
         downloadRestMt940.getElement().setAttribute("download", true);
         // hack to make it look like a button:
         downloadRestMt940.removeAll();
@@ -367,6 +382,7 @@ final class MainView extends VerticalLayout {
             originalFilename = filename;
             timestamp = TIMESTAMP_FORMAT.format(LocalDateTime.now());
             parsed = parseService.parse(inputStream);
+            paypalBookings = null;
             result = null;
             loadedMonth = new AccountMonth(parsed.getEntries().getFirst().getKontobezeichnung(), YearMonth.from(parsed.getEntries().getFirst().getValutaDatum()));
         } catch (Exception e) {

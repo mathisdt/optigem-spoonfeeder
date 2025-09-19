@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -28,16 +29,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Base64;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import static com.google.common.base.Strings.emptyToNull;
 import static com.google.common.base.Strings.nullToEmpty;
+import static org.apache.logging.log4j.util.Strings.isBlank;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaypalService {
-    private static final DateTimeFormatter DATE_TIME_OFFSET = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxxx");
+    private static final DateTimeFormatter DATE_TIME_OFFSET = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXXX");
 
     public List<PaypalBooking> getBookings(OptigemSpoonfeederProperties.AccountProperties account, YearMonth month) {
+        if (isBlank(account.getPaypalClientId()) || isBlank(account.getPaypalClientSecret())) {
+            return null;
+        }
+
         RestClient restClient = RestClient.create();
 
         RestClient.ResponseSpec authResponse = restClient
@@ -64,16 +72,18 @@ public class PaypalService {
         client.setAccessToken(token);
         TransactionsApi transactionsApi = new TransactionsApi(client);
 
+        LocalDate firstFetchedDay = month.atDay(1).minusDays(account.getPaypalDaysBefore());
+        LocalDate lastFetchedDay = month.atEndOfMonth();
         List<PaypalBooking> endOfLastMonth = getDataFromPaypal(transactionsApi,
-            month.atDay(1).minusDays(account.getPaypalDaysBefore()),
+            firstFetchedDay,
             month.atDay(1).minusDays(1));
-
         List<PaypalBooking> thisMonth = getDataFromPaypal(transactionsApi,
             month.atDay(1),
-            month.atEndOfMonth());
+            lastFetchedDay);
 
         List<PaypalBooking> bookings = new ArrayList<>(endOfLastMonth);
         bookings.addAll(thisMonth);
+        log.info("loaded {} Paypal bookings for period {} - {}", bookings.size(), firstFetchedDay, lastFetchedDay);
         return bookings;
     }
 
