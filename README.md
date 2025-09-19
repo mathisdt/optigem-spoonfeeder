@@ -1,5 +1,3 @@
-![license](https://img.shields.io/github/license/mathisdt/optigem-spoonfeeder.svg?style=flat) [![Build](https://github.com/mathisdt/optigem-spoonfeeder/actions/workflows/build.yaml/badge.svg)](https://github.com/mathisdt/optigem-spoonfeeder/actions) [![last released](https://img.shields.io/github/release-date/mathisdt/optigem-spoonfeeder.svg?label=last%20released&style=flat)](https://github.com/mathisdt/optigem-spoonfeeder/releases)
-
 *Disclaimer: I'm in neither associated with nor paid by Optigem GmbH. I just happen to use their software.*
 
 *This readme is in German as Optigem is a German-only product (it's not internationalized).*
@@ -143,10 +141,6 @@ Bei jeder Regelausführung werden diese Dateien neu eingelesen.
 Hier findet [Project Lombok](https://projectlombok.org) Verwendung, evtl. muss also in der IDE das
 entsprechende Plugin installiert werden.
 
-## Build mit Earthly
+## Lizenz
 
-Der CI-Build dieses Projekts verwendet [Earthly](https://docs.earthly.dev/),  welches wiederum 
-Containervirtualisierung (z. B. Docker oder Podman) nutzt. Sie können den Build auch lokal ausführen 
-(sofern Sie Earthly und eine OCI-kompatible Container-Engine installiert haben), indem Sie 
-`earthly +build` ausführen. Dadurch wird ein Container mit allen für den Build benötigten Komponenten
-erstellt, das Paket darin gebaut und die Ergebnisse anschließend in das Verzeichnis `target` kopiert.
+GPL v3
