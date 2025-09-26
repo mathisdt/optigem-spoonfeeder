@@ -9,12 +9,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.zephyrsoft.optigemspoonfeeder.OptigemSpoonfeederProperties;
 import org.zephyrsoft.optigemspoonfeeder.model.Buchung;
 import org.zephyrsoft.optigemspoonfeeder.model.Holder;
 import org.zephyrsoft.optigemspoonfeeder.model.IdAndName;
+import org.zephyrsoft.optigemspoonfeeder.model.PaypalBooking;
 import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 import org.zephyrsoft.optigemspoonfeeder.model.Table;
 import org.zephyrsoft.optigemspoonfeeder.model.TableRow;
@@ -76,14 +78,19 @@ final class EditDialog extends Dialog {
     private final HorizontalLayout buchungstextLayout;
     private final Button saveButton;
     private Runnable hauptkontoValueChangeTask;
-    private final List<TextField> amountFields = new ArrayList<>();
+    private final List<TextField> betragFields = new ArrayList<>();
+    private final List<ComboBox<IdAndName>> hauptkontoFields = new ArrayList<>();
+    private final List<ComboBox<IdAndName>> unterkontoFields = new ArrayList<>();
+    private final List<ComboBox<IdAndName>> projektFields = new ArrayList<>();
+    private final List<TextField> buchungstextFields = new ArrayList<>();
 
     @SuppressWarnings("unchecked")
     public EditDialog(OptigemSpoonfeederProperties.AccountProperties accountProperties, Table tableOptigemAccounts, String accountsColumnHk,
         String accountsColumnUk, String accountsColumnBez, Table tableOptigemProjects, String projectsColumnNr, String projectsColumnBez,
         String tablePersons, String personsColumnNr, String personsColumnIban, String personsColumnVorname, String personsColumnNachname,
         String accountsHkForPersons,
-        RuleResult rr, Runnable updateTableRow, PersistenceService persistenceService, PersonService personService) {
+        RuleResult rr, Runnable updateTableRow, PersistenceService persistenceService, PersonService personService,
+        List<PaypalBooking> paypalBookings) {
         this.accountProperties = accountProperties;
         this.tableOptigemAccounts = tableOptigemAccounts;
         this.accountsColumnHk = accountsColumnHk;
@@ -103,13 +110,26 @@ final class EditDialog extends Dialog {
         setDraggable(true);
         setCloseOnOutsideClick(false);
 
+        if (rr.getResult().isEmpty()) {
+            // one booking should always be present
+            Buchung firstBooking = new Buchung(-1, -1, -1, null);
+            firstBooking.setBetrag(rr.getInput().getBetrag());
+            rr.getResult().add(firstBooking);
+        }
+
         setHeaderTitle("Buchung bearbeiten");
         Button closeButton = new Button(new Icon("lumo", "cross"),
             (e) -> close());
         closeButton.setTooltipText("Schließen ohne Speichern");
         closeButton.setTabIndex(-1);
         closeButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-        getHeader().add(closeButton);
+        ComboBox<PaypalBooking> paypalDonation = new ComboBox<>();
+        paypalDonation.setPlaceholder("Paypal-Spende...");
+        paypalDonation.setItems(paypalBookings.stream().filter(PaypalBooking::isPositive).toList());
+        paypalDonation.setItemLabelGenerator(pb -> String.format(Locale.GERMAN,
+            "%1.2f %2s (%3s %4s, %5$td.%5$tm.)",
+            pb.getNetAmount(), pb.getCurrency(), pb.getFirstName(), pb.getLastName(), pb.getDate()));
+        getHeader().add(paypalDonation, closeButton);
 
         Span datum = new Span(DATE_FORMAT.format(rr.getInput().getValutaDatum()));
         Span kontonummer = new Span(rr.getInput().getKontoNummer());
@@ -118,11 +138,6 @@ final class EditDialog extends Dialog {
         Span betrag = new Span(CURRENCY_FORMAT.format(rr.getInput().getBetragMitVorzeichen()) + " €");
         betrag.addClassName(rr.getInput().isCredit() ? "green" : "red");
         Span buchungstext = new Span(rr.getInput().getBuchungstext());
-
-        TextField betragField = new TextField();
-        amountFields.add(betragField);
-        betragField.setId("betragField");
-        betragField.setWidthFull();
 
         betragLayout = new HorizontalLayout();
         betragLayout.setSizeFull();
@@ -145,7 +160,13 @@ final class EditDialog extends Dialog {
         buchungstextLayout.setPadding(false);
         buchungstextLayout.setMargin(false);
 
+        TextField betragField = new TextField();
+        betragFields.add(betragField);
+        betragField.setId("betragField");
+        betragField.setWidthFull();
+
         ComboBox<IdAndName> hauptkontoComboBox = new ComboBox<>();
+        hauptkontoFields.add(hauptkontoComboBox);
         hauptkontoComboBox.setId("hauptkontoComboBox");
         hauptkontoComboBox.setAutoOpen(true);
         hauptkontoComboBox.setWidthFull();
@@ -160,6 +181,7 @@ final class EditDialog extends Dialog {
         });
 
         ComboBox<IdAndName> unterkontoComboBox = new ComboBox<>();
+        unterkontoFields.add(unterkontoComboBox);
         unterkontoComboBox.setId("unterkontoComboBox");
         unterkontoComboBox.setAutoOpen(true);
         unterkontoComboBox.setWidthFull();
@@ -170,6 +192,7 @@ final class EditDialog extends Dialog {
         });
 
         ComboBox<IdAndName> projektComboBox = new ComboBox<>();
+        projektFields.add(projektComboBox);
         projektComboBox.setId("projektComboBox");
         projektComboBox.setAutoOpen(true);
         projektComboBox.setWidthFull();
@@ -180,6 +203,7 @@ final class EditDialog extends Dialog {
         });
 
         TextField buchungstextField = new TextField();
+        buchungstextFields.add(buchungstextField);
         buchungstextField.setId("buchungstextField");
         buchungstextField.setWidthFull();
 
@@ -233,12 +257,19 @@ final class EditDialog extends Dialog {
         buchungstextLayout.add(buchungstextField);
         formLayout.addFormItem(buchungstextLayout, "Buchungstext");
 
-        if (rr.getResult().isEmpty()) {
-            // one booking should always be present
-            Buchung firstBooking = new Buchung(-1, -1, -1, null);
-            firstBooking.setBetrag(rr.getInput().getBetrag());
-            rr.getResult().add(firstBooking);
-        }
+        paypalDonation.addValueChangeListener(e -> {
+            if (e.getValue() != null) {
+                betragFields.getLast().setValue(CURRENCY_FORMAT.format(e.getValue().getNetAmount()));
+                String hauptkontoName = getKontoName(8010, 0);
+                IdAndName unterkonto = getUnterkontoByName(8010, e.getValue().getFirstName(), e.getValue().getLastName());
+                String projektName = getProjektName(0);
+                hauptkontoFields.getLast().setValue(new IdAndName(8010, hauptkontoName));
+                unterkontoFields.getLast().setValue(unterkonto);
+                projektFields.getLast().setValue(new IdAndName(0, projektName));
+                buchungstextFields.getLast().setValue("Spende via Paypal");
+                paypalDonation.setValue(null);
+            }
+        });
 
         saveButton = new Button("Speichern & Schließen", e -> {
             try {
@@ -362,7 +393,7 @@ final class EditDialog extends Dialog {
         Button addBuchung = new Button("Buchung hinzufügen", event -> {
             Buchung buchung = new Buchung(null, null, null, null);
             rr.getResult().add(buchung);
-            BigDecimal usedAmount = amountFields.stream()
+            BigDecimal usedAmount = betragFields.stream()
                 .map(tf -> {
                     try {
                         return new BigDecimal(CURRENCY_FORMAT.parse(tf.getValue()).toString());
@@ -385,19 +416,23 @@ final class EditDialog extends Dialog {
                 AbstractField<?, ?> lastBetrag = lastChildField(betragLayout);
                 binder.removeBinding(lastBetrag);
                 betragLayout.remove(lastBetrag);
-                amountFields.removeLast();
+                betragFields.removeLast();
                 AbstractField<?, ?> lastHauptkonto = lastChildField(hauptkontoLayout);
                 binder.removeBinding(lastHauptkonto);
                 hauptkontoLayout.remove(lastHauptkonto);
+                hauptkontoFields.removeLast();
                 AbstractField<?, ?> lastUnterkonto = lastChildField(unterkontoLayout);
                 binder.removeBinding(lastUnterkonto);
                 unterkontoLayout.remove(lastUnterkonto);
+                unterkontoFields.removeLast();
                 AbstractField<?, ?> lastProjekt = lastChildField(projektLayout);
                 binder.removeBinding(lastProjekt);
                 projektLayout.remove(lastProjekt);
+                projektFields.removeLast();
                 AbstractField<?, ?> lastBuchungstext = lastChildField(buchungstextLayout);
                 binder.removeBinding(lastBuchungstext);
                 buchungstextLayout.remove(lastBuchungstext);
+                buchungstextFields.removeLast();
                 rr.getResult().remove(rr.getResult().size() - 1);
             }
         });
@@ -540,16 +575,17 @@ final class EditDialog extends Dialog {
 
     private void addFieldsForIndex(final int index, Buchung buchung) {
         TextField extraBetragField = new TextField();
-        amountFields.add(extraBetragField);
+        betragFields.add(extraBetragField);
         extraBetragField.setId("betragField" + index);
         extraBetragField.setWidthFull();
-        if (buchung != null) {
+        if (buchung != null && buchung.getBetrag() != null) {
             extraBetragField.setValue(CURRENCY_FORMAT.format(buchung.getBetrag()));
         }
         betragLayout.add(extraBetragField);
         binder.forField(extraBetragField).bind(r -> getBetrag(r, index), (r, b) -> setBetrag(r, index, b));
 
         ComboBox<IdAndName> extraHauptkontoComboBox = new ComboBox<>();
+        hauptkontoFields.add(extraHauptkontoComboBox);
         extraHauptkontoComboBox.setId("hauptkontoComboBox" + index);
         extraHauptkontoComboBox.setAutoOpen(true);
         extraHauptkontoComboBox.setWidthFull();
@@ -558,6 +594,7 @@ final class EditDialog extends Dialog {
         binder.forField(extraHauptkontoComboBox).bind(r -> getHauptkonto(r, index), (r, hk) -> setHauptkonto(r, index, hk));
 
         ComboBox<IdAndName> extraUnterkontoComboBox = new ComboBox<>();
+        unterkontoFields.add(extraUnterkontoComboBox);
         extraUnterkontoComboBox.setId("unterkontoComboBox" + index);
         extraUnterkontoComboBox.setAutoOpen(true);
         extraUnterkontoComboBox.setWidthFull();
@@ -566,6 +603,7 @@ final class EditDialog extends Dialog {
         binder.forField(extraUnterkontoComboBox).bind(r -> getUnterkonto(r, index), (r, uk) -> setUnterkonto(r, index, uk));
 
         ComboBox<IdAndName> extraProjektComboBox = new ComboBox<>();
+        projektFields.add(extraProjektComboBox);
         extraProjektComboBox.setId("projektComboBox" + index);
         extraProjektComboBox.setAutoOpen(true);
         extraProjektComboBox.setWidthFull();
@@ -574,6 +612,7 @@ final class EditDialog extends Dialog {
         binder.forField(extraProjektComboBox).bind(r -> getProjekt(r, index), (r, p) -> setProjekt(r, index, p));
 
         TextField extraBuchungstextField = new TextField();
+        buchungstextFields.add(extraBuchungstextField);
         extraBuchungstextField.setId("buchungstextField" + index);
         extraBuchungstextField.setWidthFull();
         buchungstextLayout.add(extraBuchungstextField);
@@ -836,6 +875,23 @@ final class EditDialog extends Dialog {
             rr.getResult().add(new Buchung(null, null, null, buchungstext));
         }
         rr.getResult().get(index).setBuchungstext(buchungstext == null ? "" : buchungstext);
+    }
+
+    private IdAndName getUnterkontoByName(int hk, String... nameParts) {
+        if (tableOptigemAccounts == null) {
+            return null;
+        }
+        return tableOptigemAccounts.getRows().stream()
+            .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnHk).equals(String.valueOf(hk))
+                && r.get(accountsColumnBez) != null && containsAllCaseInsensitive(r.get(accountsColumnBez), nameParts))
+            .map(r -> r.get(accountsColumnUk))
+            .findFirst()
+            .map(uk -> new IdAndName(Integer.parseInt(uk), getKontoName(hk, Integer.parseInt(uk))))
+            .orElse(new IdAndName(0, getKontoName(hk, 0)));
+    }
+
+    private static boolean containsAllCaseInsensitive(String toCheck, String... parts) {
+        return Stream.of(parts).allMatch(part -> toCheck.toLowerCase().contains(part.toLowerCase()));
     }
 
     private String getKontoName(int hk, int uk) {

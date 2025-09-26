@@ -524,7 +524,7 @@ final class MainView extends VerticalLayout {
                         accountsHkForPersons, rr, () -> {
                             grid.getDataProvider().refreshItem(rr);
                             updateFooter();
-                        }, persistenceService, personService);
+                        }, persistenceService, personService, paypalBookings);
                     editDialog.open();
                 });
                 return button;

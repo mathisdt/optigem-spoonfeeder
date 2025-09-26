@@ -48,6 +48,6 @@ public class Buchung {
 	}
 
 	public boolean isEmpty() {
-		return hauptkonto == 0 || betrag == null || incoming == null || datum == null;
+		return hauptkonto <= 0 || betrag == null || incoming == null || datum == null;
 	}
 }
