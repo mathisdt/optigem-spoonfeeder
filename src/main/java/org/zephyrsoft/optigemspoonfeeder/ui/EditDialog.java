@@ -120,13 +120,18 @@ final class EditDialog extends Dialog {
         closeButton.setTooltipText("Schließen ohne Speichern");
         closeButton.setTabIndex(-1);
         closeButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-        ComboBox<PaypalBooking> paypalDonation = new ComboBox<>();
-        paypalDonation.setPlaceholder("Paypal-Spende...");
-        paypalDonation.setItems(paypalBookings.stream().filter(PaypalBooking::isPositive).toList());
-        paypalDonation.setItemLabelGenerator(pb -> String.format(Locale.GERMAN,
-            "%1.2f %2s (%3s %4s, %5$td.%5$tm.)",
-            pb.getNetAmount(), pb.getCurrency(), pb.getFirstName(), pb.getLastName(), pb.getDate()));
-        getHeader().add(paypalDonation, closeButton);
+        ComboBox<PaypalBooking> paypalDonation = null;
+        if (paypalBookings != null) {
+            paypalDonation = new ComboBox<>();
+            paypalDonation.setPlaceholder("Paypal-Spende...");
+            paypalDonation.setItems(paypalBookings.stream().filter(PaypalBooking::isPositive).toList());
+            paypalDonation.setItemLabelGenerator(pb -> String.format(Locale.GERMAN,
+                "%1.2f %2s (%3s %4s, %5$td.%5$tm.)",
+                pb.getNetAmount(), pb.getCurrency(), pb.getFirstName(), pb.getLastName(), pb.getDate()));
+            getHeader().add(paypalDonation, closeButton);
+        } else {
+            getHeader().add(closeButton);
+        }
 
         Span datum = new Span(DATE_FORMAT.format(rr.getInput().getValutaDatum()));
         Span kontonummer = new Span(rr.getInput().getKontoNummer());
@@ -244,19 +249,21 @@ final class EditDialog extends Dialog {
         buchungstextLayout.add(buchungstextField);
         formLayout.addFormItem(buchungstextLayout, "Buchungstext");
 
-        paypalDonation.addValueChangeListener(e -> {
-            if (e.getValue() != null) {
-                betragFields.getLast().setValue(CURRENCY_FORMAT.format(e.getValue().getNetAmount()));
-                String hauptkontoName = getKontoName(8010, 0);
-                IdAndName unterkonto = getDonationUnterkontoByName(e.getValue().getFirstName(), e.getValue().getLastName());
-                String projektName = getProjektName(0);
-                hauptkontoFields.getLast().setValue(new IdAndName(8010, hauptkontoName));
-                unterkontoFields.getLast().setValue(unterkonto);
-                projektFields.getLast().setValue(new IdAndName(0, projektName));
-                buchungstextFields.getLast().setValue("Spende via Paypal");
-                paypalDonation.setValue(null);
-            }
-        });
+        if (paypalDonation != null) {
+            paypalDonation.addValueChangeListener(e -> {
+                if (e.getValue() != null) {
+                    betragFields.getLast().setValue(CURRENCY_FORMAT.format(e.getValue().getNetAmount()));
+                    String hauptkontoName = getKontoName(8010, 0);
+                    IdAndName unterkonto = getDonationUnterkontoByName(e.getValue().getFirstName(), e.getValue().getLastName());
+                    String projektName = getProjektName(0);
+                    hauptkontoFields.getLast().setValue(new IdAndName(8010, hauptkontoName));
+                    unterkontoFields.getLast().setValue(unterkonto);
+                    projektFields.getLast().setValue(new IdAndName(0, projektName));
+                    buchungstextFields.getLast().setValue("Spende via Paypal");
+                    e.getSource().setValue(null);
+                }
+            });
+        }
 
         saveButton = new Button("Speichern & Schließen", e -> {
             try {
