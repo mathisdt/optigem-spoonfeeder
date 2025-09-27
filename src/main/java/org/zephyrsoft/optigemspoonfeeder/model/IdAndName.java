@@ -16,4 +16,9 @@ public class IdAndName implements Comparable<IdAndName> {
     public int compareTo(final IdAndName o) {
         return COMPARATOR.compare(this, o);
     }
+
+    public boolean matchesFilter(final String filterText) {
+        return String.valueOf(id).contains(filterText)
+            || name.toLowerCase().contains(filterText.toLowerCase());
+    }
 }
