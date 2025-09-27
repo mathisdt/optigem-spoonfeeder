@@ -43,6 +43,8 @@ import com.vaadin.flow.data.provider.ListDataProvider;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 @Slf4j
 @SuppressWarnings({"NonSerializableFieldInSerializableClass", "serial"})
 final class EditDialog extends Dialog {
@@ -259,7 +261,9 @@ final class EditDialog extends Dialog {
                     hauptkontoFields.getLast().setValue(new IdAndName(8010, hauptkontoName));
                     unterkontoFields.getLast().setValue(unterkonto);
                     projektFields.getLast().setValue(new IdAndName(0, projektName));
-                    buchungstextFields.getLast().setValue("Spende via Paypal");
+                    buchungstextFields.getLast().setValue("Spende via Paypal - "
+                        + (isNotBlank(e.getValue().getDescription()) ? e.getValue().getDescription() + " - " : "")
+                        + e.getValue().getFirstName() + " " + e.getValue().getLastName());
                     e.getSource().setValue(null);
                 }
             });
@@ -490,7 +494,7 @@ final class EditDialog extends Dialog {
         }
 
         if (buchungstextField.isEmpty()) {
-            buchungstextField.setValue(StringUtils.isNotBlank(rr.getInput().getVerwendungszweckClean())
+            buchungstextField.setValue(isNotBlank(rr.getInput().getVerwendungszweckClean())
                 ? rr.getInput().getVerwendungszweckClean().trim() + " - " + rr.getInput().getName()
                 : rr.getInput().getName());
         }
