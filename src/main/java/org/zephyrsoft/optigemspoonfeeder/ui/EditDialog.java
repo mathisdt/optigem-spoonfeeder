@@ -52,6 +52,10 @@ final class EditDialog extends Dialog {
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getNumberInstance(Locale.GERMAN);
     private static final Pattern EVERYTHING_AFTER_SPACE = Pattern.compile(" .*$");
 
+    private static final String HAUPTKONTO_COMBO_BOX_ID = "hauptkontoComboBox";
+    private static final String UNTERKONTO_COMBO_BOX_ID = "unterkontoComboBox";
+    private static final String PROJEKT_COMBO_BOX_ID = "projektComboBox";
+
     static {
         CURRENCY_FORMAT.setMinimumIntegerDigits(1);
         CURRENCY_FORMAT.setMinimumFractionDigits(2);
@@ -167,7 +171,7 @@ final class EditDialog extends Dialog {
 
         ComboBox<IdAndName> hauptkontoComboBox = new ComboBox<>();
         hauptkontoFields.add(hauptkontoComboBox);
-        hauptkontoComboBox.setId("hauptkontoComboBox");
+        hauptkontoComboBox.setId(HAUPTKONTO_COMBO_BOX_ID);
         hauptkontoComboBox.setAutoOpen(true);
         hauptkontoComboBox.setWidthFull();
         hauptkontoComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
@@ -177,29 +181,29 @@ final class EditDialog extends Dialog {
             } else {
                 openHauptkontoComboBox.setValue(true);
             }
-            UI.getCurrent().getPage().executeJs("document.getElementById('hauptkontoComboBox').getElementsByTagName('input')[0].select();");
+            selectAllText(hauptkontoComboBox);
         });
 
         ComboBox<IdAndName> unterkontoComboBox = new ComboBox<>();
         unterkontoFields.add(unterkontoComboBox);
-        unterkontoComboBox.setId("unterkontoComboBox");
+        unterkontoComboBox.setId(UNTERKONTO_COMBO_BOX_ID);
         unterkontoComboBox.setAutoOpen(true);
         unterkontoComboBox.setWidthFull();
         unterkontoComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
         unterkontoComboBox.addFocusListener(e -> {
             unterkontoComboBox.setOpened(true);
-            UI.getCurrent().getPage().executeJs("document.getElementById('unterkontoComboBox').getElementsByTagName('input')[0].select();");
+            selectAllText(unterkontoComboBox);
         });
 
         ComboBox<IdAndName> projektComboBox = new ComboBox<>();
         projektFields.add(projektComboBox);
-        projektComboBox.setId("projektComboBox");
+        projektComboBox.setId(PROJEKT_COMBO_BOX_ID);
         projektComboBox.setAutoOpen(true);
         projektComboBox.setWidthFull();
         projektComboBox.setItemLabelGenerator(e -> e.getId() + " " + e.getName());
         projektComboBox.addFocusListener(e -> {
             projektComboBox.setOpened(true);
-            UI.getCurrent().getPage().executeJs("document.getElementById('projektComboBox').getElementsByTagName('input')[0].select();");
+            selectAllText(projektComboBox);
         });
 
         TextField buchungstextField = new TextField();
@@ -561,6 +565,14 @@ final class EditDialog extends Dialog {
         openHauptkontoComboBox.setValue(false);
         hauptkontoComboBox.focus();
     }
+
+    private static void selectAllText(ComboBox<?> dropdown) {
+        if (dropdown.getId().isPresent()) {
+            UI.getCurrent().getPage()
+                .executeJs("document.getElementById('" + dropdown.getId().get() + "').getElementsByTagName('input')[0].select();");
+        }
+    }
+
     private void fillUnterkontoComboBox(final ComboBox<IdAndName> unterkontoComboBox, final ComboBox<IdAndName> hauptComboBox) {
         if (tableOptigemAccounts != null && hauptComboBox.getValue() != null) {
             unterkontoComboBox.setItems(new ListDataProvider<>(tableOptigemAccounts.getRows().stream()
@@ -724,7 +736,7 @@ final class EditDialog extends Dialog {
             .filter(c -> c instanceof AbstractField)
             .map(c -> (AbstractField<?, ?>) c)
             .toList();
-        return components.isEmpty() ? null : components.get(components.size() - 1);
+        return components.isEmpty() ? null : components.getLast();
     }
 
     private static boolean tooLong(String str) {
@@ -882,7 +894,7 @@ final class EditDialog extends Dialog {
             return null;
         }
         return tableOptigemAccounts.getRows().stream()
-            .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnHk).equals(String.valueOf(hk))
+            .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnHk).equals(java.lang.String.valueOf(hk))
                 && r.get(accountsColumnBez) != null && containsAllCaseInsensitive(r.get(accountsColumnBez), nameParts))
             .map(r -> r.get(accountsColumnUk))
             .findFirst()
@@ -899,8 +911,8 @@ final class EditDialog extends Dialog {
             return null;
         }
         return tableOptigemAccounts.getRows().stream()
-            .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnHk).equals(String.valueOf(hk))
-                && r.get(accountsColumnUk) != null && r.get(accountsColumnUk).equals(String.valueOf(uk)))
+            .filter(r -> r.get(accountsColumnHk) != null && r.get(accountsColumnHk).equals(java.lang.String.valueOf(hk))
+                && r.get(accountsColumnUk) != null && r.get(accountsColumnUk).equals(java.lang.String.valueOf(uk)))
             .map(r -> r.get(accountsColumnBez))
             .findFirst()
             .orElse("?");
