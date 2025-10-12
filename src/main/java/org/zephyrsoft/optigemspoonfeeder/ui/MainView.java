@@ -414,6 +414,7 @@ final class MainView extends VerticalLayout {
     private void loadStoredMonth(AccountMonth accountMonth) {
         try {
             result = persistenceService.getStoredMonth(accountMonth);
+            loadedMonth = accountMonth;
 
             if (!result.getResults().isEmpty()) {
                 String konto = result.getResults().get(0).getInput().getKontobezeichnung();
@@ -426,7 +427,6 @@ final class MainView extends VerticalLayout {
 
             logArea.setText(accountMonth.getLabel() +" geladen\n" + result.getLogMessages());
             updateFooter();
-            loadedMonth = accountMonth;
             if (konten != null && !konten.isEmpty()) {
                 for (Konto k : konten) {
                     if (k.getBezeichnung().equals(accountMonth.getAccount())) {

@@ -558,7 +558,9 @@ final class EditDialog extends Dialog {
                 .map(r -> new IdAndName(Integer.parseInt(r.get(accountsColumnUk)), r.get(accountsColumnBez)))
                 .toList();
             unterkontoComboBox.setItems(new ListDataProvider<>(values));
-            unterkontoComboBox.setValue(values.getFirst());
+            if (!values.isEmpty()) {
+                unterkontoComboBox.setValue(values.getFirst());
+            }
 
         } else {
             unterkontoComboBox.setItems(Collections.emptyList());
