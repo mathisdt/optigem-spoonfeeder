@@ -44,6 +44,7 @@ import com.vaadin.flow.data.provider.ListDataProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 
 @Slf4j
 @SuppressWarnings({"NonSerializableFieldInSerializableClass", "serial"})
@@ -253,17 +254,20 @@ final class EditDialog extends Dialog {
 
         if (paypalDonation != null) {
             paypalDonation.addValueChangeListener(e -> {
-                if (e.getValue() != null) {
-                    betragFields.getLast().setValue(CURRENCY_FORMAT.format(e.getValue().getNetAmount()));
+                PaypalBooking paypalBooking = e.getValue();
+                if (paypalBooking != null) {
+                    betragFields.getLast().setValue(CURRENCY_FORMAT.format(paypalBooking.getNetAmount()));
                     String hauptkontoName = getKontoName(8010, 0);
-                    IdAndName unterkonto = getDonationUnterkontoByName(e.getValue().getFirstName(), e.getValue().getLastName());
+                    IdAndName unterkonto = getDonationUnterkontoByName(paypalBooking.getFirstName(), paypalBooking.getLastName());
                     String projektName = getProjektName(0);
                     hauptkontoFields.getLast().setValue(new IdAndName(8010, hauptkontoName));
                     unterkontoFields.getLast().setValue(unterkonto);
                     projektFields.getLast().setValue(new IdAndName(0, projektName));
                     buchungstextFields.getLast().setValue("Spende via Paypal - "
-                        + (isNotBlank(e.getValue().getDescription()) ? e.getValue().getDescription() + " - " : "")
-                        + e.getValue().getFirstName() + " " + e.getValue().getLastName());
+                        + (isNotBlank(paypalBooking.getDescription()) ? paypalBooking.getDescription() + " - " : "")
+                        + trimToEmpty(paypalBooking.getFirstName()) + " " + trimToEmpty(paypalBooking.getLastName()) + ", "
+                        + trimToEmpty(paypalBooking.getStreet()) + " " + trimToEmpty(paypalBooking.getZip()) + ", "
+                        + trimToEmpty(paypalBooking.getCity()));
                     e.getSource().setValue(null);
                 }
             });
