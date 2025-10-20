@@ -266,8 +266,8 @@ final class EditDialog extends Dialog {
                     buchungstextFields.getLast().setValue("Spende via Paypal - "
                         + (isNotBlank(paypalBooking.getDescription()) ? paypalBooking.getDescription() + " - " : "")
                         + trimToEmpty(paypalBooking.getFirstName()) + " " + trimToEmpty(paypalBooking.getLastName()) + ", "
-                        + trimToEmpty(paypalBooking.getStreet()) + " " + trimToEmpty(paypalBooking.getZip()) + ", "
-                        + trimToEmpty(paypalBooking.getCity()));
+                        + trimToEmpty(paypalBooking.getStreet()) + ", "
+                        + trimToEmpty(paypalBooking.getZip()) + " " + trimToEmpty(paypalBooking.getCity()));
                     e.getSource().setValue(null);
                 }
             });
