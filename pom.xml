@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.8</version>
+        <version>4.0.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>org.zephyrsoft</groupId>
@@ -16,7 +16,7 @@
     <description>Imports MT940 or Hibiscus data via REST and generates Optigem postings via rules or manually.</description>
     <properties>
         <java.version>21</java.version>
-        <vaadin.version>24.9.5</vaadin.version>
+        <vaadin.version>25.0.0-beta6</vaadin.version>
         <gson.version>2.13.2</gson.version>
         <gson-javatime-serialisers.version>1.1.2</gson-javatime-serialisers.version>
         <commons-io.version>2.21.0</commons-io.version>
@@ -25,7 +25,7 @@
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <maven-failsafe-plugin.version>3.5.4</maven-failsafe-plugin.version>
         <openapi-generator.version>7.17.0</openapi-generator.version>
-        <wiremock.version>3.13.2</wiremock.version>
+        <wiremock-springboot.version>4.0.8</wiremock-springboot.version>
     </properties>
     <dependencies>
         <dependency>
@@ -37,10 +37,11 @@
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!-- deprecated, but necessary because openapi-generator-maven-plugin can't produce Jackson-3 code yet: -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
+            <artifactId>spring-boot-jackson2</artifactId>
         </dependency>
 
         <dependency>
@@ -78,9 +79,14 @@
         </dependency>
 
         <dependency>
-            <groupId>org.wiremock</groupId>
-            <artifactId>wiremock-jetty12</artifactId>
-            <version>${wiremock.version}</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wiremock.integrations</groupId>
+            <artifactId>wiremock-spring-boot</artifactId>
+            <version>${wiremock-springboot.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

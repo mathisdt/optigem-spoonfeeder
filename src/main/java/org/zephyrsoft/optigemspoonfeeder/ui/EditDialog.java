@@ -40,6 +40,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.data.provider.ListDataProvider;
+import com.vaadin.flow.server.Command;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -540,7 +541,7 @@ final class EditDialog extends Dialog {
             buchungstextField.focus();
             }, Key.ENTER)
             .listenOn(projektComboBox);
-        Shortcuts.addShortcutListener(buchungstextField, saveButton::focus, Key.ENTER)
+        Shortcuts.addShortcutListener(buchungstextField, (Command) saveButton::focus, Key.ENTER)
             .listenOn(buchungstextField);
 
         hauptkontoComboBox.focus();
@@ -714,7 +715,7 @@ final class EditDialog extends Dialog {
                 extraBuchungstextField.focus();
             }, Key.ENTER)
             .listenOn(extraProjektComboBox);
-        Shortcuts.addShortcutListener(extraBuchungstextField, saveButton::focus, Key.ENTER)
+        Shortcuts.addShortcutListener(extraBuchungstextField, (Command) saveButton::focus, Key.ENTER)
             .listenOn(extraBuchungstextField);
     }
 

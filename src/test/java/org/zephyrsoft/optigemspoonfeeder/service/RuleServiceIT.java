@@ -1,12 +1,6 @@
 package org.zephyrsoft.optigemspoonfeeder.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.io.FileReader;
-import java.io.IOException;
 import java.io.LineNumberReader;
 import java.util.List;
 import java.util.Objects;
@@ -21,7 +15,9 @@ import org.zephyrsoft.optigemspoonfeeder.model.RulesResult;
 import org.zephyrsoft.optigemspoonfeeder.source.SourceFile;
 import org.zephyrsoft.optigemspoonfeeder.source.parser.Mt940Parser;
 
-import groovy.lang.GroovyRuntimeException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(properties = { "org.zephyrsoft.optigem-spoonfeeder.dir=src/test/resources/basedata" })
 class RuleServiceIT {
@@ -46,7 +42,7 @@ class RuleServiceIT {
 		assertThat(service.validateRules("return buchung(1000);").isError())
 			.isFalse();
 		assertThat(service.validateRules("nonexistentMethod();"))
-			.matches(rvr -> rvr.getErrorMessage().contains("No signature of method: Script1.nonexistentMethod() is applicable for argument types: () values: []"));
+			.matches(rvr -> rvr.getErrorMessage().contains("No signature of method: nonexistentMethod for class: Script1 is applicable for argument types: () values: []"));
 	}
 
 	@Test
