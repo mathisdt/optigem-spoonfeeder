@@ -247,7 +247,6 @@ final class MainView extends VerticalLayout {
     private void loadTablesAndApplyRules(final OptigemSpoonfeederProperties properties, final Konto account) {
         if (account != null) {
             log.debug("load tables for bank account {}", account.getIban());
-            loadTables(account.getTableAccounts(), account.getTableProjects());
 
             OptigemSpoonfeederProperties.AccountProperties accountProperties = properties.getBankAccount().get(account.getIban());
             if (accountProperties == null) {
@@ -263,7 +262,6 @@ final class MainView extends VerticalLayout {
     private void interpretAccountProperties(final OptigemSpoonfeederProperties.AccountProperties accountProperties) {
         if (accountProperties != null) {
             log.debug("load tables for bank account {}", accountProperties);
-            loadTables(accountProperties.getTableAccounts(), accountProperties.getTableProjects());
 
             accountsColumnHk = accountProperties.getAccountsColumnHk();
             accountsColumnUk = accountProperties.getAccountsColumnUk();
@@ -279,6 +277,8 @@ final class MainView extends VerticalLayout {
             personsColumnNachname = accountProperties.getPersonsColumnNachname();
 
             accountsHkForPersons = accountProperties.getAccountsHkForPersons();
+
+            loadTables(accountProperties.getTableAccounts(), accountProperties.getTableProjects());
 
             paypalBookings = paypalService.getBookings(accountProperties, loadedMonth.getYearMonth());
         }
@@ -311,6 +311,9 @@ final class MainView extends VerticalLayout {
                     log.warn("konfigurierte Konten-Tabelle {} nicht gefunden", accountTableName);
                     return null;
                 });
+            if (tableOptigemAccounts != null) {
+                tableOptigemAccounts.sortBy(accountsColumnHk, accountsColumnUk);
+            }
         } else {
             tableOptigemAccounts = null;
         }
@@ -322,6 +325,9 @@ final class MainView extends VerticalLayout {
                     log.warn("konfigurierte Projekte-Tabelle {} nicht gefunden", projectsTableName);
                     return null;
                 });
+            if (tableOptigemProjects != null) {
+                tableOptigemProjects.sortBy(projectsColumnNr);
+            }
         } else {
             tableOptigemProjects = null;
         }
