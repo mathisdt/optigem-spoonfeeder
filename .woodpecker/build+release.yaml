@@ -14,7 +14,7 @@ steps:
     when:
       - event: [ push, manual ]
     depends_on: []
-    image: maven:3.9-eclipse-temurin-21-alpine
+    image: maven:3.9-eclipse-temurin-25-alpine
     commands: |
       export TZ=Europe/Berlin
       mvn clean verify -U --no-transfer-progress -Pproduction
