@@ -380,14 +380,16 @@ final class EditDialog extends Dialog {
                 vorname, nachname, iban,
                 newPersonNumber -> {
                     if (newPersonNumber != null) {
-                        // update data
-                        fillUnterkontoComboBox(unterkontoComboBox, hauptkontoComboBox);
-                        setCalculatedComboboxDropdownWidth(unterkontoComboBox);
-                        // select newly created entry
-                        unterkontoComboBox.getListDataView().getItems()
+                        // update data in all columns
+                        for (int i = 0; i < hauptkontoFields.size(); i++) {
+                            fillUnterkontoComboBox(unterkontoFields.get(i), hauptkontoFields.get(i));
+                            setCalculatedComboboxDropdownWidth(unterkontoFields.get(i));
+                        }
+                        // select newly created entry in the rightmost column
+                        unterkontoFields.getLast().getListDataView().getItems()
                             .filter(element -> element.getId() == newPersonNumber)
                             .findAny()
-                            .ifPresent(unterkontoComboBox::setValue);
+                            .ifPresent(unterkontoFields.getLast()::setValue);
                     }
                 });
             personDialog.open();
