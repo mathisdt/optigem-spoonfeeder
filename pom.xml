@@ -15,7 +15,7 @@
     <name>optigem-spoonfeeder</name>
     <description>Imports MT940 or Hibiscus data via REST and generates Optigem postings via rules or manually.</description>
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <vaadin.version>25.0.0-beta6</vaadin.version>
         <gson.version>2.13.2</gson.version>
         <gson-javatime-serialisers.version>1.1.2</gson-javatime-serialisers.version>
@@ -192,6 +192,12 @@
 				<configuration>
 					<parameters>true</parameters>
 					<release>${java.version}</release>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </path>
+                    </annotationProcessorPaths>
 				</configuration>
 			</plugin>
 
