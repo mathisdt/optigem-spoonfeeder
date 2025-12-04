@@ -1,6 +1,7 @@
 package org.zephyrsoft.optigemspoonfeeder.service;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -9,10 +10,12 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -25,13 +28,10 @@ import org.zephyrsoft.optigemspoonfeeder.paypal.model.SearchResponse;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.util.Base64;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.base.Strings.nullToEmpty;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 
 @Slf4j
@@ -50,7 +50,8 @@ public class PaypalService {
         RestClient.ResponseSpec authResponse = restClient
             .post()
             .uri(account.getPaypalBaseUrl() + account.getPaypalAuthEndpoint())
-            .header("Authorization", "Basic " + Base64.encode(account.getPaypalClientId() + ":" + account.getPaypalClientSecret()).toString())
+            .header("Authorization",
+                "Basic " + Base64.getEncoder().encodeToString((account.getPaypalClientId() + ":" + account.getPaypalClientSecret()).getBytes(StandardCharsets.UTF_8)))
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .body("grant_type=client_credentials")
             .retrieve();
@@ -133,5 +134,13 @@ public class PaypalService {
                     : tx.getShippingInfo().getAddress().getCity())
                 .build())
             .toList();
+    }
+
+    private static String emptyToNull(String in) {
+        return StringUtils.isEmpty(in) ? null : in;
+    }
+
+    private static String nullToEmpty(String in) {
+        return in == null ? "" : in;
     }
 }

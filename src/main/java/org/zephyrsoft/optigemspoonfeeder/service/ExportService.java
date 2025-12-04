@@ -17,7 +17,6 @@ import org.zephyrsoft.optigemspoonfeeder.model.RuleResult;
 
 import com.coreoz.windmill.Windmill;
 import com.coreoz.windmill.exports.config.ExportHeaderMapping;
-import com.helger.commons.io.stream.StringInputStream;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,11 +73,12 @@ public class ExportService {
 		}
 	}
 
-	public static InputStream createMt940Export(List<RuleResult> complete) {
-		return new StringInputStream(complete.stream()
-				.filter(rr -> !rr.hasBuchung())
-				.map(rr -> rr.getInput().getAsMT940())
-				.collect(joining("\n-\n", "", "\n-\n")), StandardCharsets.UTF_8);
-	}
+    public static InputStream createMt940Export(List<RuleResult> complete) {
+        return new ByteArrayInputStream(complete.stream()
+            .filter(rr -> !rr.hasBuchung())
+            .map(rr -> rr.getInput().getAsMT940())
+            .collect(joining("\n-\n", "", "\n-\n"))
+            .getBytes(StandardCharsets.UTF_8));
+    }
 
 }
