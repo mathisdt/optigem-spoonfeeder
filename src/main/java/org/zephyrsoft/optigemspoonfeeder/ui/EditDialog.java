@@ -868,7 +868,7 @@ final class EditDialog extends Dialog {
     }
 
     private static boolean containsAllCaseInsensitive(String toCheck, String... parts) {
-        return Stream.of(parts).allMatch(part -> toCheck.toLowerCase().contains(part.toLowerCase()));
+        return Stream.of(parts).allMatch(part -> part != null && toCheck.toLowerCase().contains(part.toLowerCase()));
     }
 
     private String getKontoName(int hk, int uk) {
