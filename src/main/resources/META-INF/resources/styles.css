@@ -49,3 +49,6 @@ vaadin-grid::part(yellow) {
 	font-family: monospace;
 	font-size: smaller;
 }
+.buchungstext_field {
+    height: 60px;
+}

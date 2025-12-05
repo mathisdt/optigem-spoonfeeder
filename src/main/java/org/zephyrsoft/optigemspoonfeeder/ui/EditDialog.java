@@ -40,6 +40,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.data.provider.ListDataProvider;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.server.Command;
 
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,7 @@ final class EditDialog extends Dialog {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.");
     private static final NumberFormat CURRENCY_FORMAT = NumberFormat.getNumberInstance(Locale.GERMAN);
     private static final Pattern EVERYTHING_AFTER_SPACE = Pattern.compile(" .*$");
+    private static final String BUCHUNGSTEXT_PATTERN = "^.{0,60}$";
 
     private static final String HAUPTKONTO_COMBO_BOX_ID = "hauptkontoComboBox";
     private static final String UNTERKONTO_COMBO_BOX_ID = "unterkontoComboBox";
@@ -480,14 +482,11 @@ final class EditDialog extends Dialog {
                 buchungstextField.focus();
             }
         });
-        buchungstextField.addValueChangeListener(e -> {
-            if (tooLong(e.getOldValue()) && !tooLong(e.getValue())) {
-                buchungstextField.setHelperComponent(null);
-            } else if (!tooLong(e.getOldValue()) && tooLong(e.getValue())) {
-                buchungstextField.setHelperComponent(new Span("Text zu lang - wird in Optigem gekürzt."));
-                buchungstextField.getHelperComponent().setClassName("bold-orange");
-            }
-        });
+        buchungstextField.addClassName("buchungstext_field");
+        buchungstextField.setPattern(BUCHUNGSTEXT_PATTERN);
+        buchungstextField.setI18n(new TextField.TextFieldI18n()
+            .setPatternErrorMessage("Text zu lang - wird in Optigem gekürzt."));
+        buchungstextField.setValueChangeMode(ValueChangeMode.EAGER);
 
         for (int index = 1; index < rr.getResult().size(); index++) {
             addFieldsForIndex(index, null);
@@ -671,14 +670,11 @@ final class EditDialog extends Dialog {
             }
         });
 
-        extraBuchungstextField.addValueChangeListener(e -> {
-            if (tooLong(e.getOldValue()) && !tooLong(e.getValue())) {
-                extraBuchungstextField.setHelperComponent(null);
-            } else if (!tooLong(e.getOldValue()) && tooLong(e.getValue())) {
-                extraBuchungstextField.setHelperComponent(new Span("Text zu lang - wird in Optigem gekürzt."));
-                extraBuchungstextField.getHelperComponent().setClassName("bold-orange");
-            }
-        });
+        extraBuchungstextField.addClassName("buchungstext_field");
+        extraBuchungstextField.setPattern(BUCHUNGSTEXT_PATTERN);
+        extraBuchungstextField.setI18n(new TextField.TextFieldI18n()
+            .setPatternErrorMessage("Text zu lang - wird in Optigem gekürzt."));
+        extraBuchungstextField.setValueChangeMode(ValueChangeMode.EAGER);
 
         Shortcuts.addShortcutListener(extraBetragField, () -> {
                 extraHauptkontoComboBox.focus();
@@ -727,10 +723,6 @@ final class EditDialog extends Dialog {
             .map(c -> (AbstractField<?, ?>) c)
             .toList();
         return components.isEmpty() ? null : components.getLast();
-    }
-
-    private static boolean tooLong(String str) {
-        return !StringUtils.isEmpty(str) && str.length() > 52;
     }
 
     @SuppressWarnings("unchecked")
