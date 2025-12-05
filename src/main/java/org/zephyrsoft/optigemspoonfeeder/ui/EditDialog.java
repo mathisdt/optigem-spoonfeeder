@@ -128,7 +128,7 @@ final class EditDialog extends Dialog {
         if (paypalBookings != null) {
             paypalDonation = new ComboBox<>();
             paypalDonation.setPlaceholder("Paypal-Spende...");
-            paypalDonation.setItems(paypalBookings.stream().filter(PaypalBooking::isPositive).toList());
+            paypalDonation.setItems(paypalBookings.stream().filter(PaypalBooking::isIncomingPayment).toList());
             paypalDonation.setItemLabelGenerator(pb -> String.format(Locale.GERMAN,
                 "%1.2f %2s (%3s %4s, %5$td.%5$tm.)",
                 pb.getNetAmount(), pb.getCurrency(), pb.getFirstName(), pb.getLastName(), pb.getDate()));

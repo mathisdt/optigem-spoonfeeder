@@ -2,6 +2,7 @@ package org.zephyrsoft.optigemspoonfeeder.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -11,6 +12,9 @@ import lombok.ToString;
 @Builder
 @ToString
 public class PaypalBooking {
+    private static final Set<PaypalTransactionType> INCOMING_TYPES = Set.of(PaypalTransactionType.PAYPAL_ACCOUNT_TO_PAYPAL_ACCOUNT_PAYMENT,
+        PaypalTransactionType.BUYER_CREDIT_DEPOSIT, PaypalTransactionType.BILL_PAY, PaypalTransactionType.CREDIT_CARD_DEPOSIT);
+
     private PaypalTransactionType type;
     private LocalDateTime date;
     /** including fee */
@@ -26,8 +30,8 @@ public class PaypalBooking {
     private String city;
     private String email;
 
-    public boolean isPositive() {
-        return transactionAmount.signum() == 1;
+    public boolean isIncomingPayment() {
+        return transactionAmount.signum() == 1 && INCOMING_TYPES.contains(type);
     }
 
     /** without fee */
