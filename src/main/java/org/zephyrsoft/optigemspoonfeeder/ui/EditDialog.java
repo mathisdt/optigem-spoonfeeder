@@ -485,7 +485,7 @@ final class EditDialog extends Dialog {
         buchungstextField.addClassName("buchungstext_field");
         buchungstextField.setPattern(BUCHUNGSTEXT_PATTERN);
         buchungstextField.setI18n(new TextField.TextFieldI18n()
-            .setPatternErrorMessage("Text zu lang - wird in Optigem gekürzt."));
+            .setPatternErrorMessage("Text zu lang"));
         buchungstextField.setValueChangeMode(ValueChangeMode.EAGER);
 
         for (int index = 1; index < rr.getResult().size(); index++) {
@@ -673,7 +673,7 @@ final class EditDialog extends Dialog {
         extraBuchungstextField.addClassName("buchungstext_field");
         extraBuchungstextField.setPattern(BUCHUNGSTEXT_PATTERN);
         extraBuchungstextField.setI18n(new TextField.TextFieldI18n()
-            .setPatternErrorMessage("Text zu lang - wird in Optigem gekürzt."));
+            .setPatternErrorMessage("Text zu lang"));
         extraBuchungstextField.setValueChangeMode(ValueChangeMode.EAGER);
 
         Shortcuts.addShortcutListener(extraBetragField, () -> {
