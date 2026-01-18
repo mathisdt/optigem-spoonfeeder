@@ -25,7 +25,7 @@
         <maven-resources-plugin.version>3.4.0</maven-resources-plugin.version>
         <maven-failsafe-plugin.version>3.5.4</maven-failsafe-plugin.version>
         <openapi-generator.version>7.18.0</openapi-generator.version>
-        <wiremock-springboot.version>4.0.8</wiremock-springboot.version>
+        <wiremock-springboot.version>4.0.9</wiremock-springboot.version>
     </properties>
     <dependencies>
         <dependency>
