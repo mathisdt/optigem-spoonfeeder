@@ -390,7 +390,7 @@ final class MainView extends VerticalLayout {
             parsed = parseService.parse(inputStream);
             paypalBookings = null;
             result = null;
-            loadedMonth = new AccountMonth(parsed.getEntries().getFirst().getKontobezeichnung(), YearMonth.from(parsed.getEntries().getFirst().getValutaDatum()));
+            loadedMonth = new AccountMonth(parsed.getEntries().getFirst().getKontobezeichnung(), YearMonth.from(parsed.getEntries().getFirst().getDatumOrValuta()));
         } catch (Exception e) {
             logText.setText("Fehler: " + e.getMessage());
             log.warn("Fehler beim Parsen", e);
@@ -478,7 +478,7 @@ final class MainView extends VerticalLayout {
 
     private void configureColumns() {
         Column<RuleResult> sourceDate = grid
-            .addColumn(date(rr -> rr.getInput().getValutaDatum()))
+            .addColumn(date(rr -> rr.getInput().getDatumOrValuta()))
             .setFlexGrow(1)
             .setAutoWidth(true)
             .setResizable(true)

@@ -139,7 +139,7 @@ final class EditDialog extends Dialog {
             getHeader().add(closeButton);
         }
 
-        Span datum = new Span(DATE_FORMAT.format(rr.getInput().getValutaDatum()));
+        Span datum = new Span(DATE_FORMAT.format(rr.getInput().getDatumOrValuta()));
         Span kontonummer = new Span(rr.getInput().getKontoNummer());
         Span name = new Span(rr.getInput().getName());
         Span verwendungszweck = new Span(rr.getInput().getVerwendungszweckCleanOneline());

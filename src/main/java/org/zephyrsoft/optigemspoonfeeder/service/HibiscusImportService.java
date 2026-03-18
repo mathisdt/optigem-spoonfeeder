@@ -135,6 +135,7 @@ public class HibiscusImportService {
 				SourceEntry posting = new SourceEntry();
 				posting.setKontobezeichnung(konto.getIban());
 				posting.setBuchungstext(fetched.get("art"));
+				posting.setDatum(LocalDate.parse(fetched.get("datum"), DateTimeFormatter.ISO_LOCAL_DATE));
 				posting.setValutaDatum(LocalDate.parse(fetched.get("valuta"), DateTimeFormatter.ISO_LOCAL_DATE));
 				posting.setName(fetched.get("empfaenger_name"));
 				posting.setVerwendungszweck(fetched.get("zweck"));

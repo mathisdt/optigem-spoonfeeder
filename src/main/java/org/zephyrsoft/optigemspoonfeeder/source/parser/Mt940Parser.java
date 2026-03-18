@@ -24,6 +24,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -55,7 +57,11 @@ public class Mt940Parser {
 	private static final String FIELD_KEY_KONTONUMMER = "31";
 	private static final Set<String> FIELD_KEYS_NAME = Set.of("32", "33");
 
-	/**
+	private static final DateTimeFormatter YEAR_MONTH_DAY_FORMATTER = DateTimeFormatter.ofPattern("yyMMdd");
+	private static final DateTimeFormatter MONTH_DAY_FORMATTER = DateTimeFormatter.ofPattern("MMdd");
+    private static final Pattern STARTS_WITH_4_DIGITS = Pattern.compile("^[0-9]{4}.*");
+
+    /**
 	 * Parse the Mt940-file. Mt940 records are delimited by '-'.
 	 *
 	 * @param reader reader
@@ -288,12 +294,35 @@ public class Mt940Parser {
 	 */
 	private static String parseDatumJJMMTT(final SourceEntry currentEntry, final String string)
 			throws DateTimeParseException {
-		final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyMMdd");
 
-		final String date = string.substring(0, 6);
+		// "valuta" is required and always present
+		String valutaDate = string.substring(0, 6);
+		LocalDate parsedValutaDate = LocalDate.from(YEAR_MONTH_DAY_FORMATTER.parse(valutaDate));
+		currentEntry.setValutaDatum(parsedValutaDate);
 
-		currentEntry.setValutaDatum(LocalDate.from(dateTimeFormatter.parse(date)));
+		String rest = string.substring(6);
 
-		return string.substring(6);
+		// "posting date" is optional
+		if (STARTS_WITH_4_DIGITS.matcher(rest).matches()) {
+			String date = rest.substring(0, 4);
+			TemporalAccessor temporalAccessor = MONTH_DAY_FORMATTER.parse(date);
+			LocalDate parsedDate;
+			if (temporalAccessor.get(ChronoField.MONTH_OF_YEAR) == 1
+				&& parsedValutaDate.getMonthValue() == 12) {
+				parsedDate = LocalDate.of(parsedValutaDate.getYear() + 1,
+					temporalAccessor.get(ChronoField.MONTH_OF_YEAR), temporalAccessor.get(ChronoField.DAY_OF_MONTH));
+			} else if (temporalAccessor.get(ChronoField.MONTH_OF_YEAR) == 12
+				&& parsedValutaDate.getMonthValue() == 1) {
+				parsedDate = LocalDate.of(parsedValutaDate.getYear() - 1,
+					temporalAccessor.get(ChronoField.MONTH_OF_YEAR), temporalAccessor.get(ChronoField.DAY_OF_MONTH));
+			} else {
+				parsedDate = LocalDate.of(parsedValutaDate.getYear(),
+					temporalAccessor.get(ChronoField.MONTH_OF_YEAR), temporalAccessor.get(ChronoField.DAY_OF_MONTH));
+			}
+			currentEntry.setDatum(parsedDate);
+			rest = rest.substring(4);
+		}
+
+		return rest;
 	}
 }

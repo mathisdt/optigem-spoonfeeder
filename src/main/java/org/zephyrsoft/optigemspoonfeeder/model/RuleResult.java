@@ -55,7 +55,7 @@ public class RuleResult {
 	public void fillGeneralData() {
 		for (Buchung buchung : result) {
 			// fill general data
-			buchung.setDatum(input.getValutaDatum());
+			buchung.setDatum(input.getDatumOrValuta());
 			buchung.setIncoming(input.isCredit());
 			if (buchung.getBetrag() == null) {
 				buchung.setBetrag(input.getBetrag());

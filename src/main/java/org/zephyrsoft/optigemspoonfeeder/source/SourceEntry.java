@@ -57,6 +57,7 @@ public class SourceEntry {
 
 	private String kontobezeichnung;
 
+	private LocalDate datum;
 	private LocalDate valutaDatum;
 
 	private SollHabenKennung sollHabenKennung;
@@ -118,6 +119,10 @@ public class SourceEntry {
 		}
 	}
 
+	public LocalDate getDatumOrValuta() {
+		return datum != null ? datum : valutaDatum;
+	}
+
 	public void addToName(final String string) {
 		if (StringUtils.isBlank(name)) {
 			name = string == null ? null : string.trim();
@@ -131,13 +136,13 @@ public class SourceEntry {
 		return ":20:STARTUMS\n"
 				+ ":25:" + getKontobezeichnung() + "\n"
 				+ ":28C:1\n"
-				+ ":60F:C" + DATE.format(getValutaDatum()) + "EUR0,00\n" // we don't know, but it's obligatory => use 0
-				+ ":61:" + DATE.format(valutaDatum) + DATE_NOYEAR.format(valutaDatum) + sollHabenKennung.getAbbrev()
+				+ ":60F:C" + DATE.format(valutaDatum) + "EUR0,00\n" // we don't know, but it's obligatory => use 0
+				+ ":61:" + DATE.format(valutaDatum) + (datum != null ? DATE_NOYEAR.format(datum) : "") + sollHabenKennung.getAbbrev()
 				+ "R" + waehrung.format(betrag) + "N" + "NONREF" + "\n"
 				+ ":86:" + sollHabenKennung.getGvc() + "?00" + buchungstext + getMt940VerwendungszweckString()
 				+ "?30" + bankKennung + "?31" + kontoNummer + "?32" + getMt940StringPart(name, 0)
 				+ (isNotEmpty(getMt940StringPart(name, 1)) ? "?33" + getMt940StringPart(name, 1) : "") + "\n"
-				+ ":62F:C" + DATE.format(getValutaDatum()) + "EUR0,00"; // we don't know, but it's obligatory => use 0
+				+ ":62F:C" + DATE.format(valutaDatum) + "EUR0,00"; // we don't know, but it's obligatory => use 0
 	}
 
 	String getMt940VerwendungszweckString() {

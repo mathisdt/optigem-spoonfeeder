@@ -149,7 +149,7 @@ public class RuleService {
 
     private static void insertEntryProperties(final SourceEntry entry, final Binding sharedData) {
         sharedData.setProperty("eigenkonto", new SearchableString(entry.getKontobezeichnung()));
-        sharedData.setProperty("datum", entry.getValutaDatum());
+        sharedData.setProperty("datum", entry.getDatumOrValuta());
         sharedData.setProperty("soll", entry.isDebit());
         sharedData.setProperty("haben", entry.isCredit());
         sharedData.setProperty("betrag", entry.getBetrag());
